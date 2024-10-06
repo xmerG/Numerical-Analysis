@@ -20,8 +20,12 @@ OBJECTS_D = $(SOURCES_D:.cpp=.o)
 OBJECTS_E = $(SOURCES_E:.cpp=.o)
 OBJECTS_F = $(SOURCES_F:.cpp=.o)
 
+# LaTeX file
+TEX_FILE = report.tex
+PDF_FILE = report.pdf
+
 # All target: builds and runs all programs
-all: $(EXECUTABLES) run
+all: $(EXECUTABLES)
 
 # Build each program individually
 program_B: $(OBJECTS_B)
@@ -56,6 +60,22 @@ run: $(EXECUTABLES)
 	@echo "Running program_F..."
 	./program_F
 
+# LaTeX target to generate PDF
+report: $(PDF_FILE)
+
+$(PDF_FILE): $(TEX_FILE)
+	pdflatex $(TEX_FILE)
+	bibtex report  # 如果使用了bibtex，添加此行
+	pdflatex $(TEX_FILE)
+	pdflatex $(TEX_FILE)
+
 # Clean target
 clean:
 	rm -f *.o $(EXECUTABLES)
+
+# Clean up LaTeX auxiliary files
+cleanlatex:
+	rm -f *.aux *.log *.bbl *.blg *.toc *.out *.lof *.lot $(PDF_FILE)
+
+# Clean all
+cleanall: clean cleanlatex
