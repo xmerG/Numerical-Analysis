@@ -85,18 +85,18 @@ class Polynomial{
             return Polynomial(d);
             }
         }
-        //打印多项式
-        void print(){
+        //输出结果到文件
+        void print(ostream &out=cout) const{
             for(int i=0; i<n+1; ++i){
-                if(coefficients[i]>0 && i!=0){
-                    cout<<"+"<<coefficients[i]<<"x^"<<i;
+                if(coefficients[i]>0.00001 && i!=0){  //去掉太小的项，美化输出
+                    out<<"+"<<coefficients[i]<<"x^"<<i;
                 }
-                else if(coefficients[i]==0.0){}
+                else if(abs(coefficients[i])<0.00001){}
                 else{
-                    cout<<coefficients[i]<<"x^"<<i;
+                    out<<coefficients[i]<<"x^"<<i;
                 }
             }
-            cout<<endl;
+            out<<endl;
         }
 };
 #endif
