@@ -98,5 +98,11 @@ class Polynomial{
             }
             out<<endl;
         }
+        void printforpy(ostream &out=cout) const{
+            for(int i=0; i<n+1;++i){
+                out<<coefficients[i]<<" ";
+            }
+            out<<endl;
+        }
 };
 #endif

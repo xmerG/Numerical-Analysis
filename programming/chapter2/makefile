@@ -1,81 +1,44 @@
-# Compiler
+# 定义编译器和编译选项
 CXX = g++
-# Compiler flags
-CXXFLAGS = -Wall -g
+CXXFLAGS = -std=c++11 -Wall
 
-# Executables to be generated
-EXECUTABLES = program_B program_C program_D program_E program_F
+# 定义源文件和对应的可执行文件
+SRCS = B.cpp C.cpp D.cpp E.cpp F.cpp
+TARGETS = $(SRCS:.cpp=)
 
-# Source files
-SOURCES_B = B.cpp
-SOURCES_C = C.cpp
-SOURCES_D = D.cpp
-SOURCES_E = E.cpp
-SOURCES_F = F.cpp
+# 编译所有的可执行文件
+all: $(TARGETS)
 
-# Object files
-OBJECTS_B = $(SOURCES_B:.cpp=.o)
-OBJECTS_C = $(SOURCES_C:.cpp=.o)
-OBJECTS_D = $(SOURCES_D:.cpp=.o)
-OBJECTS_E = $(SOURCES_E:.cpp=.o)
-OBJECTS_F = $(SOURCES_F:.cpp=.o)
+# 为每个源文件生成独立的可执行文件
+%: %.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
 
-# LaTeX file
-TEX_FILE = report.tex
-PDF_FILE = report.pdf
+# 运行所有可执行文件
+run: $(TARGETS)
+	@for target in $(TARGETS); do \
+		echo "Running $$target..."; \
+		./$$target; \
+	done
 
-# All target: builds and runs all programs
-all: $(EXECUTABLES)
+# 运行所有 Python 文件（作图）
+OUTPUT_DIR = ./output
+PY_FILES = $(wildcard $(OUTPUT_DIR)/*.py)
 
-# Build each program individually
-program_B: $(OBJECTS_B)
-	$(CXX) $(CXXFLAGS) -o program_B $(OBJECTS_B)
+draw:
+	@for py_file in $(PY_FILES); do \
+		echo "Running $$py_file..."; \
+		python3 $$py_file; \
+	done
 
-program_C: $(OBJECTS_C)
-	$(CXX) $(CXXFLAGS) -o program_C $(OBJECTS_C)
+# 生成 PDF 报告
+report: report.tex
+	pdflatex report.tex
 
-program_D: $(OBJECTS_D)
-	$(CXX) $(CXXFLAGS) -o program_D $(OBJECTS_D)
-
-program_E: $(OBJECTS_E)
-	$(CXX) $(CXXFLAGS) -o program_E $(OBJECTS_E)
-
-program_F: $(OBJECTS_F)
-	$(CXX) $(CXXFLAGS) -o program_F $(OBJECTS_F)
-
-# Rule to compile .cpp files into .o files
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# Run all programs after compilation
-run: $(EXECUTABLES)
-	@echo "Running program_B..."
-	./program_B
-	@echo "Running program_C..."
-	./program_C
-	@echo "Running program_D..."
-	./program_D
-	@echo "Running program_E..."
-	./program_E
-	@echo "Running program_F..."
-	./program_F
-
-# LaTeX target to generate PDF
-report: $(PDF_FILE)
-
-$(PDF_FILE): $(TEX_FILE)
-	pdflatex $(TEX_FILE)
-	bibtex report  # 如果使用了bibtex，添加此行
-	pdflatex $(TEX_FILE)
-	pdflatex $(TEX_FILE)
-
-# Clean target
+# 清理编译文件
 clean:
-	rm -f *.o $(EXECUTABLES)
+	rm -f $(TARGETS) *.o *.aux *.log
 
-# Clean up LaTeX auxiliary files
-cleanlatex:
-	rm -f *.aux *.log *.bbl *.blg *.toc *.out *.lof *.lot $(PDF_FILE)
+# 清理所有生成文件（包括 PDF）
+clean-all: clean
+	rm -f report.pdf
 
-# Clean all
-cleanall: clean cleanlatex

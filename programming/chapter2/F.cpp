@@ -86,6 +86,7 @@ void save(int n){
 
 int main(){
     save(10);
+    save(30);
     save(40);
     save(160);
     return 0;
