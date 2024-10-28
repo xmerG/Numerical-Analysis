@@ -88,10 +88,10 @@ class Polynomial{
         //输出结果到文件
         void print(ostream &out=cout) const{
             for(int i=0; i<n+1; ++i){
-                if(coefficients[i]>0.00001 && i!=0){  //去掉太小的项，美化输出
+                if(coefficients[i]>0.000001 && i!=0){  //去掉太小的项，美化输出
                     out<<"+"<<coefficients[i]<<"x^"<<i;
                 }
-                else if(abs(coefficients[i])<0.00001){}
+                else if(abs(coefficients[i])<0.000001){}
                 else{
                     out<<coefficients[i]<<"x^"<<i;
                 }
