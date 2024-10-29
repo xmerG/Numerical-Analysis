@@ -100,7 +100,16 @@
 \end{lstlisting}
 	其中，差商表的具体构造方法完全参考了讲义中的方法。
 	\item 
-	为了解决F题，参考算法2.74，使用极坐标参数化点的坐标，$x(t)=\sqrt{3}\cos t$,$y(t)=\frac{2}{3}(\sqrt{3}\sin t +\sqrt{|x|})$,然后分别生成$x\: y$关于$t$的多项式。具体如下：
+	为了解决F题，参考算法2.74，使用极坐标参数化点的坐标，$x(t)=\sqrt{3}\cos t$,$y(t)=\frac{2}{3}(\sqrt{3}\sin t +\sqrt{|x|})$,然后分别生成$x\: y$关于$t$的多项式。为了对参数求导更方便，使用了数值导数。观察得到曲线上的点仅在横坐标为0时不是$C^1$的，只要取点时避开即可。具体如下：
+	\begin{lstlisting}
+		class Function {
+			public:
+			virtual double operator() (double x) const = 0;
+			virtual double derivative(double x) const {
+				double h=1e-6;
+				return ((*this)(x+h)-(*this)(x))/h;
+			}
+		};
 	\begin{lstlisting}
 		class Curve{
 			protected:
