@@ -3,6 +3,8 @@
 #include<iostream>
 #include<cmath>
 #include<vector>
+#include<fstream>
+#include<nlohmann/json.hpp> 
 using namespace std;
 
 //创建多项式类
@@ -14,6 +16,10 @@ class Polynomial{
         Polynomial(){};
         Polynomial(vector<double> _coefficients):coefficients(_coefficients){
             n=coefficients.size()-1;
+        }
+        //返回多项式系数
+        vector<double> getcoefficents() const{
+            return coefficients;
         }
         //返回多项式次数
         int Degree() const {
@@ -98,11 +104,24 @@ class Polynomial{
             }
             out<<endl;
         }
-        void printforpy(ostream &out=cout) const{
-            for(int i=0; i<n+1;++i){
-                out<<coefficients[i]<<" ";
-            }
-            out<<endl;
+    void printToJson(const string& filename) const {
+        // 创建一个 JSON 对象
+        nlohmann::json j;
+
+        // 将多项式的系数添加到 JSON 对象
+        j["degree"] = n;  // 多项式的次数
+        j["coefficients"] = coefficients;  // 系数数组
+
+        // 打开文件并写入 JSON 数据
+        std::ofstream file(filename);
+        if (file.is_open()) {
+            file << j.dump(4);  // 格式化输出，4个空格缩进
+            file.close();
+            cout << "Polynomial has been written to " << filename << endl;
         }
+        else {
+            cerr << "Error opening file " << filename << endl;
+        }
+    }
 };
 #endif
