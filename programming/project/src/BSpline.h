@@ -23,18 +23,32 @@ class B_base{
 protected:
     int n; //记录节点个数
     vector<double> knots; //记录节点
-    vector<Polynomial> pols;  //记录多项式
+    vector<Polynomial> pols;  //记录分段多项式
 public:
     B_base(){};
     B_base(const vector<double> &_knots){
         knots=_knots;
         n=knots.size();
+        if(n!=degree+2){
+            cerr<<"Error:节点和阶数不匹配"<<endl;
+            exit(EXIT_FAILURE);
+        }
     }
 
-    vector<Polynomial> getPolynomial(){
+    //给定节点的指标i,构造support在knots[i-1]到knots[i+d]上的d阶B样条
+    vector<double> setknots(const int &index, const int & d) const{
+        vector<double> _knots;
+        for(int i=index-1; i<d+index+1; ++i){
+            _knots.push_back(knots[i]);
+        }
+        return _knots;
+    }
+
+    vector<Polynomial> getPolynomial() const{
         return pols;
     }
 
+    //构造分段多项式
     void getBase(){
         if(degree==1){
             double delta1=knots[1]-knots[0];
@@ -80,14 +94,7 @@ public:
         }
         return p1;
     }
-    //给定节点的指标i,构造support在knots[i-1]到knots[i+d]上的d阶B样条
-    vector<double> setknots(const int &index, const int & d){
-        vector<double> _knots;
-        for(int i=index-1; i<d+index+1; ++i){
-            _knots.push_back(knots[i]);
-        }
-        return _knots;
-    }
+
 
     //在给定节点上求值
     double operator()(const int &index) const{
@@ -100,26 +107,27 @@ public:
         
     }
 
-    //在给定节点求一阶导数
-/*    double derivative(const int &index) const{
+    //在给定节点求一阶导数,如果只求导，不要对B_base<degree>执行getbase()
+    double derivative(const int &index) const{
         if(0<index<n-1){
             B_base<degree-1> B1(setknots(1,n-3));
             B_base<degree-1> B2(setknots(2,n-3));
             B1.getBase();
             B2.getBase();
-            return degree*(B1(knots[index])/(knots[n-2]-knots[0])-B2(knots[index]/(knots[n-1]-knots[1])));
+            return degree*(B1(knots[index])/(knots[n-2]-knots[0])-B2(knots[index])/(knots[n-1]-knots[1]));
         }
         else{
             return 0.0;
         }
-    } */
+    } 
 
+    //打印多项式
     void print() const {
         nlohmann::json j;
         j["knots"] = knots;
         nlohmann::json polynomials_json;
         for (const auto& poly : pols) {
-            polynomials_json.push_back(poly.getcoefficents());  // 假设Polynomial类有getCoefficients()方法
+            polynomials_json.push_back(poly.getcoefficents()); 
         }
         j["polynomials"] = polynomials_json;
         j["degree"] = degree;
@@ -127,6 +135,18 @@ public:
         std::cout << j.dump(4) << std::endl;  // 格式化输出
     }
 
+};
+
+//实现Bspline
+template<int degree>
+class BSpline{
+private:
+    vector<double> knots //记录节点
+    vector<vector<double>> A; //系数矩阵
+    vector<double> b; //记录节点上的函数值，最终会将基函数的系数储存在b中
+    vector<B_base<degree>>; //记录基函数
+public:
+    
 };
 
 

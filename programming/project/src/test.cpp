@@ -14,6 +14,8 @@ int main() {
 
     // 打印B样条的信息
     b_spline.print();
+    cout<<b_spline(2)<<" "<<b_spline.derivative(2.0)<<endl;
+
 
 
 
