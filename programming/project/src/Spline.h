@@ -11,7 +11,7 @@ enum class SplineType{
 };
 
 template<int dim, int order, SplineType>
-clsaa Spline{
+class Spline{
 
 };
 

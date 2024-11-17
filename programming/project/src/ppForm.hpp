@@ -1,5 +1,5 @@
-#ifndef _PPFORM_H_
-#define _PPFORM_H_
+#ifndef _PPFORM_HPP_
+#define _PPFORM_HPP_
 #include<iostream>
 #include<fstream>
 #include<vector>
@@ -102,7 +102,7 @@ public:
     cubic_ppForm(const vector<double> &_knots, const vector<double> &_vals, 
                     boundaryType _btype=boundaryType::natural):ppForm(_knots, _vals){
         cubic_ppForm();
-        A.resize(n,vector<double>(n,0));
+        A.resize(n,vector<double>(n,0.0));
         btype=_btype;
     }
     cubic_ppForm(const vector<double> &_knots, const Function &F, 
