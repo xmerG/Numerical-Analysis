@@ -28,12 +28,36 @@ public:
     }
 
 };
+void test(const int &n){
+    Runge f;
+    knots x(n, -1.0, 1.0);
+    vector<double> X=x.getknots();
+    linear_ppForm l(X,f);
+    l.print("output_A.txt");
+
+    cubic_ppForm s(X, f);
+    s.print("output_A.txt");
+
+    cubic_ppForm s1(X, f,boundaryType::complete);
+    s1.print("output_A.txt");
+
+    cubic_ppForm s2(X, f,boundaryType::not_a_knot);
+    s2.print("output_A.txt");
+
+    cubic_ppForm s3(X, f,boundaryType::periodic);
+    s3.print("output_A.txt");
+
+    cubic_ppForm s4(X, f,boundaryType::specified);
+    s4.print("output_A.txt");
+
+
+}
 
 int main(){
-    Runge f;
-    knots x(21, -1.0, 1.0);
-    vector<double> X=x.getknots();
-    cubic_ppForm s1(X,f);
-    s1.print("output.txt");
+    test(6);
+    test(11);
+    test(21);
+    test(41);
+    test(81);
     return 0;
 }

@@ -29,7 +29,7 @@ class Polynomial{
         Polynomial operator+(const Polynomial &p1 ) const{
             int n1=max(n,p1.Degree());
             int n2=min(n, p1.Degree());
-            vector<double> v(n1+1);
+            vector<double> v(n1+1,0.0);
             for(int i=0; i<=n2; ++i){
                 v[i]=coefficients[i]+p1.coefficients[i];
             }
@@ -57,6 +57,16 @@ class Polynomial{
         Polynomial operator-(const Polynomial &p1){
             return *this+(-p1);
         }
+
+        //实现多项式数乘
+        Polynomial operator*(const double &a) const{
+            vector<double> newcoefficients(n,0.0);
+            for(int i=0; i<n+1; ++i){
+                newcoefficients[i]=a*coefficients[i];
+            }
+            return Polynomial(newcoefficients);
+        }
+        
         //实现多项式乘法
         Polynomial operator*(const Polynomial &p1)const{
             int m=n+p1.Degree();
@@ -91,6 +101,16 @@ class Polynomial{
             return Polynomial(d);
             }
         }
+
+        //指定点求导数
+
+        double derivative(const double &x){
+            Polynomial p;
+            p=derivative();
+            return p(x);
+
+        }
+
         //输出结果到文件
         void print(ostream &out=cout) const{
             for(int i=0; i<n+1; ++i){
