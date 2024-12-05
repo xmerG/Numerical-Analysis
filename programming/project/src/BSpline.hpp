@@ -357,6 +357,11 @@ public:
         }
     }
 
+    //get polynomials
+    vector<Polynomial> returnPols(){
+        return pols;
+    }
+
 };
 
 

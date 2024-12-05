@@ -233,7 +233,10 @@ public:
             pols.push_back(h.getpolynomial());
         }
     }
-
+    //get polynomials
+    vector<Polynomial> returnPols(){
+        return pols;
+    }
 
 };
 

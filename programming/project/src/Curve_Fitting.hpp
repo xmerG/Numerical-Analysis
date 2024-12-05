@@ -1,10 +1,16 @@
 #include<iostream>
 #include<vector>
 #include<cmath>
+#include <nlohmann/json.hpp>
+#include<fstream>
 #include"Function.hpp"
 #include"BSpline.hpp"
+#include"Polynomial.hpp"
 #include"ppForm.hpp"
 using namespace std;
+
+const double pi = acos(-1.);
+const double a=sqrt(3);
 
 double distance(const vector<double> &x, const vector<double> &y){
     if(x.size()!=y.size()){
@@ -31,3 +37,79 @@ vector<double> getknots(const vector<vector<double>> &points){
     return knots;
 }
 
+class Curve_Fit{
+protected:
+    vector<double> knots; //knots
+    vector<Polynomial> pols;  //polynomials x_1(t), y_1(t), x_2(t), y_2(t)...
+    vector<Polynomial> polsX;
+    vector<Polynomial> polsY;
+public:
+    Curve_Fit(const vector<double> &_knots):knots{_knots}{}
+};
+
+class plane_curve_fit:public Curve_Fit{
+public:
+    void cubic_ppform_fit(const Function &f1, const Function &f2){
+        cubic_ppForm s_x(knots, f1, boundaryType::periodic);
+        vector<Polynomial> polsX=s_x.returnPols();
+        cubic_ppForm s_y(knots, f2, boundaryType::periodic);
+        vector<Polynomial> polsY=s_y.returnPols();
+        convert();
+    }
+
+    void cubic_bspline_fit(const Function &f1, const Function &f2){
+        BSpline<3> s_x(knots, f1, boundaryType::periodic);
+        vector<Polynomial> polsX=s_x.returnPols();
+        BSpline<3> s_y(knots, f2, boundaryType::periodic);
+        vector<Polynomial> polsY=s_y.returnPols();
+        convert();
+    }
+
+    void convert(){
+        for(int i=0; i<polsX.size(); ++i){
+            pols.push_back(polsX[i]);
+            pols.push_back(polsY[i]);
+        }
+    }
+
+
+
+    void print(const string& filename) {
+        // 创建一个 JSON 对象
+        nlohmann::json j;
+
+        // 将 knots（节点）存储为 JSON 数组
+        j["knots"] = knots;
+    
+        // 将 pols（多项式的系数）存储为 JSON 数组
+        vector<nlohmann::json> polynomials;
+        for (const auto& poly : pols) {
+            nlohmann::json poly_json;
+            poly_json["coefficients"] = poly.getcoefficents();  
+            polynomials.push_back(poly_json);
+        }
+        j["polynomials"] = polynomials;
+    
+        // 先检查文件是否为空
+        std::ifstream file_check(filename);  // 用 ifstream 检查文件
+        bool is_empty = file_check.peek() == std::ifstream::traits_type::eof();  // 判断文件是否为空
+        file_check.close();  // 关闭检查用的文件流
+
+        // 打开文件并以追加模式写入 JSON 数据
+        std::ofstream file(filename, std::ios::app);  // 打开文件进行追加
+        if (file.is_open()) {
+            // 如果文件非空，则添加分隔符（换行符）
+            if (!is_empty) {
+                file << "\n";  // 可以根据需要使用其他分隔符
+            }
+
+            // 将 JSON 数据写入文件，并格式化输出
+            file << j.dump(4);  // 4 个空格缩进
+            file.close();
+            cout << "Output appended to " << filename << endl;
+        } 
+        else {
+            cerr << "Error opening file " << filename << endl;
+        }
+    }
+};
