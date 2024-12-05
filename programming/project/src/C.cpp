@@ -1,7 +1,7 @@
 #include<iostream>
 #include<fstream>
 #include"Function.hpp"
-#include"BSpline.h"
+#include"BSpline.hpp"
 using namespace std;
 
 class Runge:public Function{
@@ -19,22 +19,36 @@ vector<double> getknots(const double &a, const int &n, const int &degree){
     return v;
 }
 
-void test(const vector<double> &v){
+void linear_test(const vector<double> &v){
+    Runge f;
+    BSpline<1> b(v,f);
+    b.print("output_C.txt");
+}
+
+void cubic_test(const vector<double> &v){
     Runge f;
     BSpline<3> b1(v,f);
-    b1.print("output_C.json");
-    /*BSpline<3> b2(v,f,boundaryType::complete);
-    b2.print("output_C.json");
+    b1.print("output_C.txt");
+    BSpline<3> b2(v,f,boundaryType::complete);
+    b2.print("output_C.txt");
 
     BSpline<3> b3(v,f,boundaryType::periodic);
-    b3.print("output_C.json");
+    b3.print("output_C.txt");
 
     BSpline<3> b4(v,f,boundaryType::specified);
-    b4.print("output_C.json");*/
+    b4.print("output_C.txt");
+}
+
+void test(const double &a, const int &b){
+    vector<double> v1=getknots(a,b,1);
+    linear_test(v1);
+
+    vector<double> v2=getknots(a, b, 3);
+    cubic_test(v2);
 }
 
 int main(){
-    vector<double> v2=getknots(-6.0, 11, 3);
-    test(v2);
+    test(-6.0,11);
+    test(-5.5, 10);
     return 0;
 }

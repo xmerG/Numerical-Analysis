@@ -1,11 +1,16 @@
-#ifndef _BSPLINE_HPP_
-#define _BSPLINE_HPP_
+#ifndef _BSPLINE_H_
+#define _BSPLINE_H_
 #include<iostream>
 #include<vector>
 #include<cmath>
+#include<fstream>
 #include"Function.hpp"
 #include"Polynomial.hpp"
+#include <lapacke.h>
+#include <nlohmann/json.hpp>
 using namespace std;
+
+using json = nlohmann::json;
 
 enum class boundaryType{
     periodic,
@@ -18,120 +23,341 @@ enum class boundaryType{
 template<int degree>
 class B_base{
 protected:
-    int n;//记录节点个数
-    vector<double> knots; //记录supp_B上的节点
-    vector<Polynomial> polys;  //记录每个区间上的多项式
+    int n; //记录节点 个数
+    vector<double> knots; //记录节点
+    vector<Polynomial> pols;  //记录分段多项式
 public:
-    B_base(){}
-    
-    vector<double> getknots(const int &index){
-        vector<double> knots1;
-        for(int j=index; j<index+degree+1){
-            knots1.push_back(knots[j]);
+    B_base(){};
+    B_base(const vector<double> &_knots){
+        knots=_knots;
+        n=knots.size();
+        if(n!=degree+2){
+            cerr<<"Error:节点和阶数不匹配"<<endl;
+            exit(EXIT_FAILURE);
         }
     }
-    
-    B_base(const vector<double> &_knots):knots{_knots}{
+
+    //给定节点的指标i,构造support在knots[i-1]到knots[i+d]上的d阶B样条
+    vector<double> setknots(const int &index, const int & d) const{
+        vector<double> _knots;
+        for(int i=index-1; i<d+index+1; ++i){
+            _knots.push_back(knots[i]);
+        }
+        return _knots;
+    }
+
+    vector<Polynomial> getPolynomial() const{
+        return pols;
+    }
+
+    //构造分段多项式
+    void getBase(){
         if(degree==1){
-            double delta1=knots[1]-knots[0]
-            Polynomial p1(-knots[0]/delta1, 1.0/delta1);
-            polys.push_back(p1);
+            double delta1=knots[1]-knots[0];
+            Polynomial p1(vector<double>{-knots[0]/delta1,1.0/delta1});
+            pols.push_back(p1);
             double delta2=knots[2]-knots[1];
-            Polynomial p2(knots[2]/delta2, -1.0/delta2);
-            polys.push_back(p2);
+            Polynomial p2(vector<double>{knots[2]/delta2,-1.0/delta2});
+            pols.push_back(p2);
         }
         else{
-            int n=degree;
-            double delta1=knots[n]-knots[0];
-            double delta2=knots[n+1]-knots[1];
-            vector<double> knots1;
-            vector<double> knots2;
-            for(int j=0; j<n+1; ++j){
-                knots1.push_back(knots[j]);
-                knots2.push_back(knots[j+1]);
+            vector<vector<Polynomial>> u; //每个vecotr<Polynomial>存放B_i的多项式
+            for(int i=1; i<degree+1; ++i){
+                B_base<1> B1(vector<double>{knots[i-1], knots[i], knots[i+1]});
+                B1.getBase();
+                u.push_back(B1.getPolynomial());
             }
-            vector<Polynomial> p1=B_base<n-1>(knots1)*Polynomial(vector<double>{-knots[0]/delta1, 1.0/delta1});
-            vector<Polynomial> p2=B_base<n-1>(knots2)*Polynomial(vector<double>{knots[n+1]/delta2, -1.0/delta2});
-            polys.push_back(p1[0]);
-            for(int j=1; j<n-1; ++j){
-                polys.push_back(p1[j]+p2[j-1]);
+            for(int j=1; j<degree; ++j){
+                vector<vector<Polynomial>> v;
+                int m=degree+1-u.size(); //反映了当前多项式族所对应的B_base的阶
+                for(int k=0; k<u.size()-1; ++k){
+                    vector<Polynomial> v1;
+                    double delta1=knots[k+1+m]-knots[k];
+                    double delta2=knots[k+2+m]-knots[k+1];
+                    v1.push_back(u[k][0]*Polynomial(vector<double>{-knots[k]/delta1, 1.0/delta1}));
+                    for(int t=1; t<=m; ++t){
+                        v1.push_back(u[k][t]*Polynomial(vector<double>{-knots[k]/delta1, 1.0/delta1})+
+                                        u[k+1][t-1]*Polynomial(vector<double>{knots[k+2+m]/delta2, -1.0/delta2}));
+                    }
+                    v1.push_back(u[k+1][m]*Polynomial(vector<double>{knots[k+m+2]/delta2, -1.0/delta2}));
+                    v.push_back(v1);
+                }
+                u=v;
             }
-            polys.push_back(p2[n-1]);
+            pols=u[0];
         }
     }
-    vector<Polynomial> getPolynomial(){
-        return polys;
+
+    //定义Base和多项式的乘法
+    /*vector<Polynomial> operator*(const Polynomial &p) const{
+        vector<Polynomial> p1;
+        for(int i=0; i<n-1; ++i){
+            p1.push_back(p*pols[i]);
+        }
+        return p1;
+    }*/
+
+
+    //在给定节点上求值
+    double operator()(const int &index) const{
+        if(0<index<n-1){
+            return pols[index](knots[index]);
+        }
+        else{
+            return 0.0;
+        }
+        
     }
-    vector<Polynomial> operator*(const Polynomial &p) const{
-        vector<Polynomial> q;
-        for(int i=0; i<polys.size(); ++i)[
-            q.push_back(polys[i]*p);
-        ]
-        return q;
-    }
-    //实现在节点处求值的功能,index传入节点的下标
-    double B(const int &index) const{
-        return polys[index](knots[i]);
-    }
+
+    //在给定节点求一阶导数,如果只求导，不要对B_base<degree>执行getbase()
+    double derivative(const int &index) const{
+        if(0<index<n-1){
+            B_base<degree-1> B1(setknots(1,n-3));
+            B_base<degree-1> B2(setknots(2,n-3));
+            B1.getBase();
+            B2.getBase();
+            return degree*(B1(knots[index])/(knots[n-2]-knots[0])-B2(knots[index])/(knots[n-1]-knots[1]));
+        }
+        else{
+            return 0.0;
+        }
+    } 
+
+
 
 };
 
+//实现Bspline
 template<int degree>
 class BSpline{
-protected:
-    int n;  //节点个数
-    vector<double> knots;
-    vector<Polynomial> pols;   
-    vector<double> vals; //节点上的函数值,之后将求解得到的系数矩阵也储存在里面
-public:
-    void print(string &filename){
+private:
+    vector<double> knots; //记录节点 要多记录2*degree个节点
+    vector<vector<double>> A; //系数矩阵
+    vector<double> b; //记录节点上的函数值，最终会将基函数的系数储存在b中
+    vector<vector<Polynomial>> bases; //记录基函数
+    vector<Polynomial> pols;  //记录多项式
+    int n;
 
+    void prepare(){
+        for(int i=0; i<n; ++i){
+            vector<double> subknots(knots.begin()+i,knots.begin()+i+degree+2);
+            B_base<degree> base(subknots);
+            base.getBase();
+            bases.push_back(base.getPolynomial());
+        }
     }
 
-    BSpline(){}
-    BSpline(const vector<double> &_knots, const Function &F, btype=boundaryType::natural):knots{_knots}{
-        n=_knots.size();  
-        if(degree==1){
-            for(int i=1; i<n-1; ++i){
-                vals.push_back(F(knots[i]));
-            }
-            linear_Bspline();
-        }
-        //n=3的时候要多给6个节点,因此只在n-6个节点上有函数值，也就是要确定n-4个系数
+    void getMatrix(){
         if(degree==3){
-            vals.resize(n-4, 0.0);
-            for(int i=1; i<n-5; ++i){
-                vals[i]=F(knots[i+2]);
+            A.resize(n,vector<double>(n,0.0));
+            for(int i=1; i<n-1; ++i){
+                A[i][i-1]=bases[i-1][3](knots[i+2]);
+                A[i][i]=bases[i][2](knots[i+2]);
+                A[i][i+1]=bases[i+1][1](knots[i+2]);
             }
         }
     }
-    void linear_Bspline(){
-        //一阶梯B样条插值点要多给两个，分别是第一个点和最后一个点
-        for(int i=1; i<n-2; ++i){
-            B_base<1> B1(knots[i-1], knots[i], knots[i+1]);
-            B_base<1> B2(knots[i], knots[i+1], knots[i+2]); 
-            pols.push_back(B1.getPolynomial()[1]*vals[i-1]+B2.getPolynomial()[0]*vals[i]);               
+
+    vector<double> convert(){
+        vector<double> a;
+        for(int i=0; i<n; ++i){
+            for(int j=0; j<n; ++j){
+                a.push_back(A[j][i]);
+            }
+        }
+        return a;
+
+    }
+
+    void calculateCoefficient(){
+        vector<double> matrix=convert();
+        vector<int> ipiv(n);
+            // 调用 LAPACKE_dgesv 函数来求解 Ax = b,解的结果储存在b中
+        int info = LAPACKE_dgesv(LAPACK_COL_MAJOR, n, 1, matrix.data(), n, ipiv.data(), b.data(), n);
+    }
+
+    void getpiecewisePoly(){
+        calculateCoefficient();
+        for(int i=0; i<n-3; ++i){
+            Polynomial p;
+            p=bases[i][3]*Polynomial(vector<double>{b[i]})+bases[i+1][2]*Polynomial(vector<double> {b[i+1]});
+            Polynomial p2;
+            p2=bases[i+2][1]*Polynomial(vector<double> {b[i+2]})+bases[i+3][0]*Polynomial(vector<double> {b[i+3]});
+            Polynomial p3;
+            p3=p+p2;
+            pols.push_back(p3);
         }
     }
 
-    void cubic_Bspline(boundaryType btype){
-        vector<vector<double>> A; //记录系数矩阵
-        A.resize(n,vector<double>(n-4, 0.0));
-        for(int i=1; i<n-5; ++i){
-            A[i][i-1]=pow((knots[i+3]-knots[i+2]), 2)/((knots[i+3]-knots[i])*(knots[i+3]-knots[i+1]));
-            A[i][i]=((knots[i+2]-knots[i])*(knots[i+3]-knots[i+2])/(knots[i+3]-knots[i])+
-                        (knots[i+4]-knots[i+2])*(knots[i+2]-knots[i+1])/(knots[i+4]-knots[i+1]))/(knots[i+3]-knots[i+1]);
-            A[i][i+1]=pow(knots[i+2]-knots[i+1], 2)/((knots[i+4]-knots[i+1])*(knots[i+3]-knots[i+1]));
+public:
+    BSpline(){}
+    BSpline(const vector<double> &_knots, const Function &F, const boundaryType &btype=boundaryType::natural):knots{_knots}{
+        n=knots.size()-degree-1;
+        b.resize(n,0.0);
+        prepare();
+        if(degree==1){
+            for(int i=0; i<n; ++i){
+                b[i]=F(knots[i+1]);
+            }
+            for(int i=0;i<bases.size()-1; ++i){
+                pols.push_back(bases[i][1]*Polynomial(vector<double>{b[i]})+bases[i+1][0]*Polynomial(vector<double>{b[i+1]}));
+            }
         }
-        if(btype==boundaryType::complete, const Function &f){
-            vals[0]=f.doubleDerivative(knots[3]);
-            vals[n-5]=f.doubleDerivative(knots[n-4]);
+        if(degree==3){
+            for(int i=1; i<n-1; ++i){
+                b[i]=F(knots[i+degree-1]);
+            }
+            getMatrix();
+            // complete spline
+            if(btype==boundaryType::complete){
+                b[0]=F.derivative(knots[3]);
+                b[n-1]=F.derivative(knots[n]);
+                A[0][0]=bases[0][3].derivative(knots[3]);
+                A[0][1]=bases[1][2].derivative(knots[3]);
+                A[0][2]=bases[2][1].derivative(knots[3]);
+                A[n-1][n-3]=bases[n-3][3].derivative(knots[n]);
+                A[n-1][n-2]=bases[n-2][2].derivative(knots[n]);
+                A[n-1][n-1]=bases[n-1][1].derivative(knots[n]);
+            }
 
+            //natural spline
+            else if(btype==boundaryType::natural){
+                double delta1=knots[4]-knots[1];
+                double delta2=knots[4]-knots[2];
+                double delta3=knots[5]-knots[2];
+                A[0][0]=6.0/(delta1*delta2);
+                A[0][1]=(-6.0/delta1-6.0/delta3)/delta2;
+                A[0][2]=6.0/(delta3*delta2);
+                delta1=knots[n+1]-knots[n-2];
+                delta2=knots[n+1]-knots[n-1];
+                delta3=knots[n+2]-knots[n-1];
+                A[n-1][n-3]=6.0/(delta1*delta2);
+                A[n-1][n-2]=(-6.0/delta1-6.0/delta3)/delta2;
+                A[n-1][n-1]=6.0/(delta2*delta3);
+            }
+
+            //specified spline
+            else if(btype==boundaryType::specified){
+                double delta1=knots[4]-knots[1];
+                double delta2=knots[4]-knots[2];
+                double delta3=knots[5]-knots[2];
+                A[0][0]=6.0/(delta1*delta2);
+                A[0][1]=(-6.0/delta1-6.0/delta3)/delta2;
+                A[0][2]=6.0/(delta3*delta2);
+                b[0]=F.doubleDerivative(knots[3]);
+                delta1=knots[n+1]-knots[n-2];
+                delta2=knots[n+1]-knots[n-1];
+                delta3=knots[n+2]-knots[n-1];
+                A[n-1][n-3]=6.0/(delta1*delta2);
+                A[n-1][n-2]=(-6.0/delta1-6.0/delta3)/delta2;
+                A[n-1][n-1]=6.0/(delta2*delta3);
+                b[n-1]=F.doubleDerivative(knots[n]);
+            }
+
+            //periodic spline
+            else if(btype==boundaryType::periodic){
+                //repace s(b)=f(b) with s(b)=f(a)
+                b[n-2]=b[1];
+                // second derivative of a and b is equal
+                double delta1=knots[4]-knots[1];
+                double delta2=knots[4]-knots[2];
+                double delta3=knots[5]-knots[2];
+                A[n-1][0]=6.0/(delta1*delta2);
+                A[n-1][1]=(-6.0/delta1-6.0/delta3)/delta2;
+                A[n-1][2]=6.0/(delta3*delta2);
+                delta1=knots[n+1]-knots[n-2];
+                delta2=knots[n+1]-knots[n-1];
+                delta3=knots[n+2]-knots[n-1];
+                A[n-1][n-3]=-6.0/(delta1*delta2);
+                A[n-1][n-2]=(6.0/delta1+6.0/delta3)/delta2;
+                A[n-1][n-1]=-6.0/(delta2*delta3);
+                //first oreder derivative of a and b is equal
+                A[0][0]=bases[0][3].derivative(knots[3]);
+                A[0][1]=bases[1][2].derivative(knots[3]);
+                A[0][2]=bases[2][1].derivative(knots[3]);
+                A[0][n-3]=-bases[n-3][3].derivative(knots[n]);
+                A[0][n-2]=-bases[n-2][2].derivative(knots[n]);
+                A[0][n-1]=-bases[n-1][1].derivative(knots[n]);
+            }
+
+            // not-a-knot spline
+            else if(btype==boundaryType::not_a_knot){}
+            getpiecewisePoly();
+        }
+
+
+    }
+
+    BSpline(const vector<double> &_knots, const vector<vector<Polynomial>> &base,
+                const vector<double> &coef){
+        if(_knots.size()-degree-1!=base.size() || base.size()!=coef.size()){
+            cerr<<"not a Bspline"<<endl;
+            return;
+        }
+        else{
+            knots=_knots;
+            b=coef;
+            bases=base;
+        }
+    }
+
+    //calculate the value of arbitrary BSpline if we already know the expression
+    double calculateValue(const double &x){
+        double y=0.0;
+        //find the interval containing x
+        for(int i=degree; i<=n; ++i){
+            if(knots[i]<x && x<=knots[i+1]){
+                for(int j=degree; j>=0; --j){
+                    y+=bases[i-j][j](x)*b[i-j];
+                }
+            }
+        }
+        return y;
+    }
+
+
+    void print(const string& filename) {
+        // 创建一个 JSON 对象
+        nlohmann::json j;
+    
+    
+        // 将 knots（节点）存储为 JSON 数组
+        vector<double> newknots(knots.begin() + degree, knots.end()-degree); 
+        j["knots"] = newknots; 
+    
+        // 将 pols（多项式的系数）存储为 JSON 数组
+        vector<nlohmann::json> polynomials;
+        for (const auto& poly : pols) {
+            nlohmann::json poly_json;
+            poly_json["coefficients"] = poly.getcoefficents();  
+            polynomials.push_back(poly_json);
+        }
+        j["polynomials"] = polynomials;
+    
+        // 先检查文件是否为空
+        std::ifstream file_check(filename);  // 用 ifstream 检查文件
+        bool is_empty = file_check.peek() == std::ifstream::traits_type::eof();  // 判断文件是否为空
+        file_check.close();  // 关闭检查用的文件流
+
+        // 打开文件并以追加模式写入 JSON 数据
+        std::ofstream file(filename, std::ios::app);  // 打开文件进行追加
+        if (file.is_open()) {
+            // 如果文件非空，则添加分隔符（换行符）
+            if (!is_empty) {
+                file << "\n";  // 可以根据需要使用其他分隔符
+            }
+
+            // 将 JSON 数据写入文件，并格式化输出
+            file << j.dump(4);  // 4 个空格缩进
+            file.close();
+            cout << "Output appended to " << filename << endl;
+        } 
+        else {
+            cerr << "Error opening file " << filename << endl;
         }
     }
 
 };
-
 
 
 #endif

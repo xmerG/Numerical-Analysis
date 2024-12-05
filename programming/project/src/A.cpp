@@ -21,7 +21,7 @@ private:
 public:
     knots(const int &n, const double &a, const double&b):n{n}, a{a}, b{b}{}
     vector<double> getknots(){
-        for(int i=0; i<n; ++i){
+        for(int i=0; i<n+1; ++i){
             knot.push_back(a+(b-a)*i/n);
         }
     return knot;

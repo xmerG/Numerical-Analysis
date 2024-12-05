@@ -41,49 +41,46 @@ public:
     }
         // 输出 knnots 和 pols 到 JSON 文件
     void print(const string& filename) {
-    // 创建一个 JSON 对象
-    nlohmann::json j;
+        // 创建一个 JSON 对象
+        nlohmann::json j;
     
-    // 添加边界条件
-    j["boundary_conditions"] = btype;  // 假设 `boundary_conditions` 已经是定义的
+        // 添加边界条件
+        j["boundary_conditions"] = btype;  // 假设 `boundary_conditions` 已经是定义的
     
-    // 将 knots（节点）存储为 JSON 数组
-    j["knots"] = knots;
+        // 将 knots（节点）存储为 JSON 数组
+        j["knots"] = knots;
     
-    // 将 pols（多项式的系数）存储为 JSON 数组
-    vector<nlohmann::json> polynomials;
-    for (const auto& poly : pols) {
-        nlohmann::json poly_json;
-        poly_json["coefficients"] = poly.getcoefficents();  
-        polynomials.push_back(poly_json);
-    }
-    j["polynomials"] = polynomials;
-    
-    // 先检查文件是否为空
-    std::ifstream file_check(filename);  // 用 ifstream 检查文件
-    bool is_empty = file_check.peek() == std::ifstream::traits_type::eof();  // 判断文件是否为空
-    file_check.close();  // 关闭检查用的文件流
-
-    // 打开文件并以追加模式写入 JSON 数据
-    std::ofstream file(filename, std::ios::app);  // 打开文件进行追加
-    if (file.is_open()) {
-        // 如果文件非空，则添加分隔符（换行符）
-        if (!is_empty) {
-            file << "\n";  // 可以根据需要使用其他分隔符
+        // 将 pols（多项式的系数）存储为 JSON 数组
+        vector<nlohmann::json> polynomials;
+        for (const auto& poly : pols) {
+            nlohmann::json poly_json;
+            poly_json["coefficients"] = poly.getcoefficents();  
+            polynomials.push_back(poly_json);
         }
+        j["polynomials"] = polynomials;
+    
+        // 先检查文件是否为空
+        std::ifstream file_check(filename);  // 用 ifstream 检查文件
+        bool is_empty = file_check.peek() == std::ifstream::traits_type::eof();  // 判断文件是否为空
+        file_check.close();  // 关闭检查用的文件流
 
-        // 将 JSON 数据写入文件，并格式化输出
-        file << j.dump(4);  // 4 个空格缩进
+        // 打开文件并以追加模式写入 JSON 数据
+        std::ofstream file(filename, std::ios::app);  // 打开文件进行追加
+        if (file.is_open()) {
+            // 如果文件非空，则添加分隔符（换行符）
+            if (!is_empty) {
+                file << "\n";  // 可以根据需要使用其他分隔符
+            }
 
-        file.close();
-        cout << "Output appended to " << filename << endl;
-    } else {
-        cerr << "Error opening file " << filename << endl;
+            // 将 JSON 数据写入文件，并格式化输出
+            file << j.dump(4);  // 4 个空格缩进
+            file.close();
+            cout << "Output appended to " << filename << endl;
+        } 
+        else {
+            cerr << "Error opening file " << filename << endl;
+        }
     }
-}
-
-
-
 };
 
 class linear_ppForm:public ppForm{
@@ -159,10 +156,7 @@ public:
 
         //周期样条
         else if(btype==boundaryType::periodic){
-            if(b[1]!=b[n]){
-                cerr<<"warning! Not periodic pp-spline"<<endl;
-                return;
-            }
+            vals[n-2]=vals[1];
             A[0][0]=1.0;
             A[0][n-1]=-1.0;
             double delta1=knots[1]-knots[0];
@@ -181,7 +175,7 @@ public:
             double delta1=knots[1]-knots[0];
             double delta2=knots[2]-knots[1];
             A[0][0]=pow(delta2,2);
-            A[0][1]=(knots[2]-knots[0]*(knots[2]+knots[0]-2*knots[1]));
+            A[0][1]=(knots[2]-knots[0])*(knots[2]+knots[0]-2*knots[1]);
             A[0][2]=pow(delta1, 2);
             b[0]=2*k1*pow(delta2,2)-2*divideddifference(knots[2], knots[1], vals[2], vals[1])*pow(delta1, 2);
             //x_{n-1}处三阶导数存在
