@@ -1,5 +1,5 @@
-#ifndef _PPFORM_HPP_
-#define _PPFORM_HPP_
+#ifndef _PPFORM_H_
+#define _PPFORM_H_
 #include<iostream>
 #include<fstream>
 #include<vector>
@@ -163,28 +163,7 @@ private:
 public:
     cubic_ppForm(){}
     cubic_ppForm(const vector<double> &_knots, const vector<double> &_vals, 
-                    boundaryType _btype=boundaryType::periodic):ppForm(_knots, _vals){
-        cubic_ppForm();
-        prepare_for_Matrix();
-        double k1=divideddifference(knots[0],knots[1], vals[0], vals[1]); //第一个节点x_1处s的导数
-        double kn=divideddifference(knots[n-2], knots[n-1], vals[n-2], vals[n-1]);  //第n-1个节点处s的导数
-        A.resize(n,vector<double>(n,0.0));
-        btype=_btype;
-        vals[n-2]=vals[1];
-        A[0][0]=1.0;
-        A[0][n-1]=-1.0;
-        double delta1=knots[1]-knots[0];
-        double delta2=knots[n-1]-knots[n-2];
-        A[n-1][0]=2*delta2;
-        A[n-1][1]=delta2;
-        A[n-1][n-2]=delta1;
-        A[n-1][n-1]=2*delta1;
-        b[0]=0.0;
-        b[n-1]=3*k1*delta2+3*kn*delta1;
-        getPiecePolys();
-    }
-    cubic_ppForm(const vector<double> &_knots, const Function &F, 
-                    boundaryType _btype=boundaryType::natural):ppForm(_knots, F){
+                    boundaryType _btype=boundaryType::natural, const double&a1=0.0, const double &a2=0.0):ppForm(_knots, _vals){
         btype=_btype;
         double k1=divideddifference(knots[0],knots[1], vals[0], vals[1]); //第一个节点x_1处s的导数
         double kn=divideddifference(knots[n-2], knots[n-1], vals[n-2], vals[n-1]);  //第n-1个节点处s的导数
@@ -193,8 +172,8 @@ public:
         if(btype==boundaryType::complete){
             A[0][0]=1.0;
             A[n-1][n-1]=1.0;
-            b[0]=F.derivative(knots[0]);
-            b[n-1]=F.derivative(knots[n-1]);
+            b[0]=a1;
+            b[n-1]=a2;
         }
 
         //自然样条
@@ -209,13 +188,13 @@ public:
 
         //特定样条
         else if(btype==boundaryType::specified){
-            double b1=-3.0*k1+(knots[1]-knots[0])*F.doubleDerivative(knots[0])/2.0;
+            double b1=-3.0*k1+(knots[1]-knots[0])*a1/2.0;
             b[0]=b1;
             A[0][0]=2.0;
             A[n-1][n-1]=2.0;
             A[0][1]=1.0;
             A[n-1][n-2]=1.0;
-            double bn=3.0*kn+F.doubleDerivative(knots[n-1])*(knots[n-1]-knots[n-2])/2.0;
+            double bn=3.0*kn+a2*(knots[n-1]-knots[n-2])/2.0;
             b[n-1]=bn;
         }
 
@@ -253,6 +232,22 @@ public:
             
         }
         getPiecePolys();
+    }
+    cubic_ppForm(const vector<double> &_knots, const Function &F, 
+                    boundaryType _btype=boundaryType::natural):ppForm(_knots, F){
+        //完全样条
+        if(_btype==boundaryType::complete){
+            *this=cubic_ppForm(knots, vals, _btype,F.derivative(knots[0]), F.derivative(knots[n-1]));
+        }
+
+        //特定样条
+        else if(_btype==boundaryType::specified){
+            *this=cubic_ppForm(knots, vals, _btype,F.doubleDerivative(knots[0]), F.doubleDerivative(knots[n-1]));
+        }
+
+        else{
+            *this=cubic_ppForm(knots, vals, _btype);
+        }
     }
 
 

@@ -1,7 +1,7 @@
 #include<iostream>
 #include<fstream>
 #include"Function.hpp"
-#include"ppForm.hpp"
+#include"ppForm.h"
 using namespace std;
 
 
