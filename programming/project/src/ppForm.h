@@ -115,8 +115,10 @@ class cubic_ppForm:public ppForm{
 private:
     vector<vector<double>> A;  //记录矩阵
     vector<double> b; //记录AX=b的b， 之后也会储存在knots上s(x)的导数
+    double a1=0.0;
+    double a2=0.0; //记录三阶样条在端点的一阶导数值或者二阶导数值
 
-        double divideddifference(const double &x1, const double &x2, const double &y1, const double &y2){
+    double divideddifference(const double &x1, const double &x2, const double &y1, const double &y2){
         return (y2-y1)/(x2-x1);
     }
 
@@ -160,11 +162,8 @@ private:
             pols.push_back(h.getpolynomial());
         }
     }
-public:
-    cubic_ppForm(){}
-    cubic_ppForm(const vector<double> &_knots, const vector<double> &_vals, 
-                    boundaryType _btype=boundaryType::natural, const double&a1=0.0, const double &a2=0.0):ppForm(_knots, _vals){
-        btype=_btype;
+
+    void fit(){
         double k1=divideddifference(knots[0],knots[1], vals[0], vals[1]); //第一个节点x_1处s的导数
         double kn=divideddifference(knots[n-2], knots[n-1], vals[n-2], vals[n-1]);  //第n-1个节点处s的导数
         prepare_for_Matrix();
@@ -233,20 +232,33 @@ public:
         }
         getPiecePolys();
     }
+public:
+    cubic_ppForm(){}
+    cubic_ppForm(const vector<double> &_knots, const vector<double> &_vals, 
+                    boundaryType _btype=boundaryType::natural, const double&_a1=0.0, const double &_a2=0.0):ppForm(_knots, _vals){
+        btype=_btype;
+        a1=_a1;
+        a2=_a2;
+        fit();
+    }
     cubic_ppForm(const vector<double> &_knots, const Function &F, 
                     boundaryType _btype=boundaryType::natural):ppForm(_knots, F){
+        btype=_btype;
         //完全样条
         if(_btype==boundaryType::complete){
-            *this=cubic_ppForm(knots, vals, _btype,F.derivative(knots[0]), F.derivative(knots[n-1]));
+            a1=F.derivative(knots[0]);
+            a2=F.derivative(knots[n-1]);
+            fit();
         }
 
         //特定样条
         else if(_btype==boundaryType::specified){
-            *this=cubic_ppForm(knots, vals, _btype,F.doubleDerivative(knots[0]), F.doubleDerivative(knots[n-1]));
+            a1=F.doubleDerivative(knots[0]);
+            a2=F.doubleDerivative(knots[n-1]);
+            fit();
         }
-
         else{
-            *this=cubic_ppForm(knots, vals, _btype);
+            fit();
         }
     }
 
