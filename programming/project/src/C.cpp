@@ -1,7 +1,7 @@
 #include<iostream>
 #include<fstream>
 #include"Function.hpp"
-#include"BSpline.hpp"
+#include"BSpline.h"
 using namespace std;
 
 class Runge:public Function{

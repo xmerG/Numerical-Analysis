@@ -6,7 +6,7 @@
 #include"Function.hpp"
 #include"BSpline.hpp"
 #include"Polynomial.hpp"
-#include"ppForm.hpp"
+#include"ppForm.h"
 using namespace std;
 
 double distance(const vector<double> &x, const vector<double> &y){
@@ -23,7 +23,7 @@ double distance(const vector<double> &x, const vector<double> &y){
     }
 }
 
-vector<double> getknots(const vector<vector<double>> &points){
+vector<double> getknots(const vector<vector<double>> &points) {
     double t=0.0;
     int n=points.size();
     vector<double> knots(n,0.0);
@@ -40,7 +40,7 @@ protected:
     vector<Polynomial> pols;  //polynomials x_1(t), y_1(t), x_2(t), y_2(t)...
 
 public:
-    Curve_Fit(const vector<double> &_knots):knots{_knots}{}
+    Curve_Fit(vector<double> &_knots):knots{_knots}{}
     void print(const string& filename) {
         // 创建一个 JSON 对象
         nlohmann::json j;
@@ -94,39 +94,39 @@ protected:
         }
     }
 public:
-    plane_curve_fit(const vector<double> &knots, const vector<double> &_x_vals, const vector<double> &_y_vals):Curve_Fit(knots){
+    plane_curve_fit(vector<double> &knots, const vector<double> &_x_vals, const vector<double> &_y_vals):Curve_Fit(knots){
         x_vals=_x_vals;
         y_vals=_y_vals;
     }
     void cubic_ppform_fit(){
         cubic_ppForm s_x(knots, x_vals);
-        vector<Polynomial> polsX=s_x.returnPols();
+        polsX=s_x.returnPols();
         cubic_ppForm s_y(knots, y_vals);
-        vector<Polynomial> polsY=s_y.returnPols();
+        polsY=s_y.returnPols();
         convert();
     }
 
     void cubic_bspline_fit(const Function &f1, const Function &f2){
         BSpline<3> s_x(knots, f1, boundaryType::periodic);
-        vector<Polynomial> polsX=s_x.returnPols();
+        polsX=s_x.returnPols();
         BSpline<3> s_y(knots, f2, boundaryType::periodic);
-        vector<Polynomial> polsY=s_y.returnPols();
+        polsY=s_y.returnPols();
         convert();
     }
 
     void linear_ppform_fit(const Function &f1, const Function &f2){
         linear_ppForm s_x(knots, f1);
-        vector<Polynomial> polsX=s_x.returnPols();
+        polsX=s_x.returnPols();
         linear_ppForm s_y(knots, f2);
-        vector<Polynomial> polsY=s_y.returnPols();
+        polsY=s_y.returnPols();
         convert();
     }
 
     void linear_Bspline_fit(const Function &f1, const Function &f2){
         BSpline<1> s_x(knots, f1, boundaryType::periodic);
-        vector<Polynomial> polsX=s_x.returnPols();
+        polsX=s_x.returnPols();
         BSpline<1> s_y(knots, f2, boundaryType::periodic);
-        vector<Polynomial> polsY=s_y.returnPols();
+        polsY=s_y.returnPols();
         convert();
     }
 };

@@ -9,15 +9,8 @@
 #include"Interpolation.hpp"
 #include <lapacke.h>
 #include <nlohmann/json.hpp>
+#include"boundaryType.hpp"
 using namespace std;
-
-enum class boundaryType{
-    periodic,
-    complete,
-    specified,
-    natural,
-    not_a_knot
-};
 
 class ppForm{
 protected:

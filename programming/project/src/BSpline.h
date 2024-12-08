@@ -1,5 +1,5 @@
-#ifndef _BSPLINE_HPP_
-#define _BSPLINE_HPP_
+#ifndef _BSPLINE_H_
+#define _BSPLINE_H_
 #include<iostream>
 #include<vector>
 #include<cmath>
@@ -130,6 +130,7 @@ private:
     vector<double> b; //记录节点上的函数值，最终会将基函数的系数储存在b中
     vector<vector<Polynomial>> bases; //记录基函数
     vector<Polynomial> pols;  //记录多项式
+    boundaryType btype=boundaryType::non;
     int n;
 
     void prepare(){
@@ -183,33 +184,19 @@ private:
         }
     }
 
-    void fit(){
-
-    }
-
-public:
-    BSpline(){}
-    BSpline(const vector<double> &_knots, const Function &F, const boundaryType &btype=boundaryType::natural):knots{_knots}{
-        n=knots.size()-degree-1;
-        b.resize(n,0.0);
+    void fit(double a1=0.0, double a2=0.0){
         prepare();
         if(degree==1){
-            for(int i=0; i<n; ++i){
-                b[i]=F(knots[i+1]);
-            }
             for(int i=0;i<bases.size()-1; ++i){
                 pols.push_back(bases[i][1]*Polynomial(vector<double>{b[i]})+bases[i+1][0]*Polynomial(vector<double>{b[i+1]}));
             }
         }
         if(degree==3){
-            for(int i=1; i<n-1; ++i){
-                b[i]=F(knots[i+degree-1]);
-            }
             getMatrix();
             // complete spline
             if(btype==boundaryType::complete){
-                b[0]=F.derivative(knots[3]);
-                b[n-1]=F.derivative(knots[n]);
+                b[0]=a1;
+                b[n-1]=a2;
                 A[0][0]=bases[0][3].derivative(knots[3]);
                 A[0][1]=bases[1][2].derivative(knots[3]);
                 A[0][2]=bases[2][1].derivative(knots[3]);
@@ -242,14 +229,14 @@ public:
                 A[0][0]=6.0/(delta1*delta2);
                 A[0][1]=(-6.0/delta1-6.0/delta3)/delta2;
                 A[0][2]=6.0/(delta3*delta2);
-                b[0]=F.doubleDerivative(knots[3]);
+                b[0]=a1;
                 delta1=knots[n+1]-knots[n-2];
                 delta2=knots[n+1]-knots[n-1];
                 delta3=knots[n+2]-knots[n-1];
                 A[n-1][n-3]=6.0/(delta1*delta2);
                 A[n-1][n-2]=(-6.0/delta1-6.0/delta3)/delta2;
                 A[n-1][n-1]=6.0/(delta2*delta3);
-                b[n-1]=F.doubleDerivative(knots[n]);
+                b[n-1]=a2;
             }
 
             //periodic spline
@@ -282,8 +269,43 @@ public:
             else if(btype==boundaryType::not_a_knot){}
             getpiecewisePoly();
         }
+    }
 
+public:
+    BSpline(){}
+    //a b denotes the extra 2 conditions for 3-spline
+    BSpline(const vector<double> &_knots, const vector<double> &vals, const double &a1=0.0,
+                 const double &a2=0.0):knots{_knots},b{vals}{
+        n=knots.size()-degree-1;
+        fit(a1,a2);
+    }
+    BSpline(const vector<double> &_knots, const Function &F, const boundaryType &btype=boundaryType::natural):knots{_knots}{
+        n=knots.size()-degree-1;
+        b.resize(n,0.0);
+        if(degree==1){
+            for(int i=0; i<n; ++i){
+                b[i]=F(knots[i+1]);
+            }
+            fit();
+        }
+        else if(degree==3){
+            for(int i=1; i<n-1; ++i){
+                b[i]=F(knots[i+degree-1]);
+            }
+            // complete spline
+            if(btype==boundaryType::complete){
+                fit(F.derivative(knots[3]), F.derivative(knots[n]));
+            }
 
+            //specified spline
+            else if(btype==boundaryType::specified){
+                fit(F.doubleDerivative(knots[3]), F.doubleDerivative(knots[n]));
+            }
+
+            else{
+                fit();
+            }
+        }
     }
 
     BSpline(const vector<double> &_knots, const vector<vector<Polynomial>> &base,
