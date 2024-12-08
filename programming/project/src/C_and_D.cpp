@@ -19,6 +19,8 @@ vector<double> getknots(const double &a, const int &n, const int &degree){
     return v;
 }
 
+
+
 void linear_test(const vector<double> &v){
     Runge f;
     BSpline<1> b(v,f);
@@ -29,6 +31,7 @@ void cubic_test(const vector<double> &v){
     Runge f;
     BSpline<3> b1(v,f);
     b1.print("output_C.txt");
+
     BSpline<3> b2(v,f,boundaryType::complete);
     b2.print("output_C.txt");
 
