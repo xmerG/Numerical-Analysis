@@ -130,8 +130,8 @@ private:
     vector<double> b; //记录节点上的函数值，最终会将基函数的系数储存在b中
     vector<vector<Polynomial>> bases; //记录基函数
     vector<Polynomial> pols;  //记录多项式
-    boundaryType btype=boundaryType::non;
     int n;
+    boundaryType btype=boundaryType::non;
 
     void prepare(){
         for(int i=0; i<n; ++i){
@@ -184,8 +184,7 @@ private:
         }
     }
 
-    void fit(double a1=0.0, double a2=0.0){
-        prepare();
+    void fit(const double &a1=0.0, const double &a2=0.0){
         if(degree==1){
             for(int i=0;i<bases.size()-1; ++i){
                 pols.push_back(bases[i][1]*Polynomial(vector<double>{b[i]})+bases[i+1][0]*Polynomial(vector<double>{b[i+1]}));
@@ -273,39 +272,42 @@ private:
 
 public:
     BSpline(){}
-    //a b denotes the extra 2 conditions for 3-spline
-    BSpline(const vector<double> &_knots, const vector<double> &vals, const double &a1=0.0,
-                 const double &a2=0.0):knots{_knots},b{vals}{
-        n=knots.size()-degree-1;
-        fit(a1,a2);
-    }
-    BSpline(const vector<double> &_knots, const Function &F, const boundaryType &btype=boundaryType::natural):knots{_knots}{
+    BSpline(const vector<double> &_knots, const vector<double> &vals, const double &a1, const double &a2, 
+                const boundaryType &_btype==boundaryType::natural):knots{_knots},btype{_btype},b{vals}{
+        prepare();
+        fit();
+                }
+    BSpline(const vector<double> &_knots, const Function &F, const boundaryType &_btype=boundaryType::natural):knots{_knots}{
         n=knots.size()-degree-1;
         b.resize(n,0.0);
+        btype=_btype;
+        prepare();
         if(degree==1){
             for(int i=0; i<n; ++i){
                 b[i]=F(knots[i+1]);
             }
-            fit();
         }
-        else if(degree==3){
+        if(degree==3){
             for(int i=1; i<n-1; ++i){
                 b[i]=F(knots[i+degree-1]);
             }
+
             // complete spline
             if(btype==boundaryType::complete){
-                fit(F.derivative(knots[3]), F.derivative(knots[n]));
+                fit(F.derivative(knots[3]),F.derivative(knots[n]));
             }
+
 
             //specified spline
             else if(btype==boundaryType::specified){
                 fit(F.doubleDerivative(knots[3]), F.doubleDerivative(knots[n]));
             }
-
             else{
                 fit();
             }
         }
+
+
     }
 
     BSpline(const vector<double> &_knots, const vector<vector<Polynomial>> &base,
