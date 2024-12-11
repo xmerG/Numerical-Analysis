@@ -3,13 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from mpl_toolkits.mplot3d import Axes3D
-
+import os
 
 # 读取JSON文件
 def load_json(filename):
     with open(filename, 'r') as f:
         data = json.load(f)
-    return np.array(data['points'])
+    return np.array(data)
 
 # 绘制球面
 def plot_sphere(ax, radius=1):
@@ -47,7 +47,7 @@ def smooth_curve(points, num_points=1000):
 # 主函数
 def main():
     # 加载数据
-    points = load_json("E_spherecurve.txt")  # 假设文件名是output.json
+    points = load_json("E_spherecurve.txt") 
     
     # 生成目标曲线
     target_x, target_y, target_z = target_curve()
@@ -63,22 +63,36 @@ def main():
     plot_sphere(ax)
     
     # 绘制目标曲线
-    ax.plot(target_x, target_y, target_z, label="Target Curve", color='r', linewidth=2)
+    ax.plot(target_x, target_y, target_z, label="Target Curve", color='r', linewidth=0.5)
 
     # 绘制平滑曲线
-    ax.plot(smooth_x, smooth_y, smooth_z, label="Smoothed Curve", color='g', linewidth=2)
+    ax.plot(smooth_x, smooth_y, smooth_z, label="Smoothed Curve", color='g', linewidth=0.5)
 
-    # 绘制数据点
-    ax.scatter(points[:, 0], points[:, 1], points[:, 2], color='b', s=30, label="Data Points")
     ax.legend()
     # 设置标签
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
 
+    # 获取当前工作目录并构造输出路径
+    current_dir = os.path.dirname(os.path.abspath(__file__))  # 获取当前脚本所在的目录
+
+    
+    output_dir = os.path.join(current_dir, "..", "figure")  # 目标文件夹路径: 上级目录/figure
+
+    
+    # 确保输出目录存在
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # 保存图形到figure文件夹
+    output_path = os.path.join(output_dir, "sphere_curve.png")
+    fig.savefig(output_path, dpi=300)  # 保存为 PNG 格式，300 DPI，确保高清
+
+    print(f"Figure saved to {output_path}")
 
     # 显示图形
-    plt.show()
+    plt.close()
 
 if __name__ == "__main__":
     main()

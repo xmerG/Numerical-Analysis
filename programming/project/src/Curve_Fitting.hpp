@@ -8,6 +8,8 @@
 #include"Polynomial.hpp"
 #include"ppForm.hpp"
 using namespace std;
+using json = nlohmann::json;
+
 
 double distance(const vector<double> &x, const vector<double> &y){
     if(x.size()!=y.size()){
@@ -128,5 +130,99 @@ public:
         BSpline<1> s_y(knots, f2, boundaryType::periodic);
         polsY=s_y.returnPols();
         convert();
+    }
+};
+
+
+vector<double> get_t(const int &N, const double &a, const double &b){
+    vector<double> t(N+1);
+    for(int i=0; i<N+1; ++i){
+        t[i]=a+(b-a)*i/N;
+    }
+    return t;
+}
+
+vector<double> getvals(const vector<double> &t, const Function &f){
+    int n=t.size();
+    vector<double> vals(n);
+    for(int i=0; i<n; ++i){
+        vals[i]=f(t[i]);
+    }
+    return vals;
+}
+
+vector<vector<double>> getpoints(const vector<double> &x, const vector<double> &y){
+        int n=x.size();
+        vector<vector<double>> points(n);
+        for(int i=0; i<n; ++i){
+            points[i].push_back(x[i]);
+            points[i].push_back(y[i]);
+        }
+        return points;
+}
+
+void Fit(const int &N, const double &a, const double &b, const Function &f1, const Function &f2, const string &filename){
+    vector<double> t=get_t(N,a,b);
+    vector<double> x_val=getvals(t, f1);
+    vector<double> y_val=getvals(t, f2);
+    vector<vector<double>> points=getpoints(x_val,y_val);
+    vector<double> knots=getknots(points);
+    plane_curve_fit s1(knots, x_val, y_val);
+    s1.cubic_ppform_fit();
+    s1.print(filename);
+}
+
+class sphereFit{
+private:
+    vector<vector<double>> points;
+    vector<double> knots;
+    vector<double> x_val;
+    vector<double> y_val;
+public:
+    sphereFit(const int &N, const double &a, const double &b, const Function &f1, const Function &f2){
+        vector<double> t=get_t(N,a,b);
+        x_val=getvals(t, f1);
+        y_val=getvals(t, f2);
+        vector<vector<double>> points=getpoints(x_val,y_val);
+        knots=getknots(points);
+    }
+    void cubic_ppfit(const boundaryType &btype=boundaryType::periodic){
+        cubic_ppForm p1(knots,x_val,btype);
+        vector<Polynomial> p_x=p1.returnPols();
+        cubic_ppForm p2(knots,y_val,btype);
+        vector<Polynomial> p_y=p2.returnPols();
+        for(int i=0; i<p_x.size(); ++i){
+            for(double j=knots[i];j<knots[i+1];j+=0.001){
+                double a=p_x[i](j);
+                double b=p_y[i](j);
+                double c=pow(a,2)+pow(b,2);
+                vector<double> p{2.0*a/(1+c), 2.0*b/(1+c), (1-c)/(1+c)};
+                points.push_back(p);    
+            }
+        }
+    }
+    void print(const string& filename) {
+        json j = points;  
+
+        ifstream file_check(filename); 
+        bool is_empty = file_check.peek() == std::ifstream::traits_type::eof();  // 判断文件是否为空
+        file_check.close();  // 关闭检查用的文件流
+
+        // 打开文件并以追加模式写入 JSON 数据
+        std::ofstream file(filename, std::ios::app);  // 打开文件进行追加
+        if (file.is_open()) {
+            // 如果文件非空，则添加分隔符（换行符）
+            if (!is_empty) {
+                file << "\n";  // 你可以根据需要使用其他分隔符
+            }
+
+            // 将 JSON 数据写入文件，并格式化输出
+            file << j.dump(4);  // 4 个空格缩进
+            file.close();
+            cout << "Output appended to " << filename << endl;
+        } 
+        else {
+            cerr << "Error opening file " << filename << endl;
+        }
     }
 };
