@@ -1,5 +1,5 @@
-#ifndef _PPFORM_H_
-#define _PPFORM_H_
+#ifndef _PPFORM_HPP_
+#define _PPFORM_HPP_
 #include<iostream>
 #include<fstream>
 #include<vector>
@@ -108,10 +108,8 @@ class cubic_ppForm:public ppForm{
 private:
     vector<vector<double>> A;  //记录矩阵
     vector<double> b; //记录AX=b的b， 之后也会储存在knots上s(x)的导数
-    double a1=0.0;
-    double a2=0.0; //记录三阶样条在端点的一阶导数值或者二阶导数值
 
-    double divideddifference(const double &x1, const double &x2, const double &y1, const double &y2){
+        double divideddifference(const double &x1, const double &x2, const double &y1, const double &y2){
         return (y2-y1)/(x2-x1);
     }
 
@@ -155,8 +153,7 @@ private:
             pols.push_back(h.getpolynomial());
         }
     }
-
-    void fit(){
+    void fit(const double &a1=0.0, const double &a2=0.0){
         double k1=divideddifference(knots[0],knots[1], vals[0], vals[1]); //第一个节点x_1处s的导数
         double kn=divideddifference(knots[n-2], knots[n-1], vals[n-2], vals[n-1]);  //第n-1个节点处s的导数
         prepare_for_Matrix();
@@ -228,28 +225,22 @@ private:
 public:
     cubic_ppForm(){}
     cubic_ppForm(const vector<double> &_knots, const vector<double> &_vals, 
-                    boundaryType _btype=boundaryType::natural, const double&_a1=0.0, const double &_a2=0.0):ppForm(_knots, _vals){
+                    boundaryType _btype=boundaryType::natural, const double&a1=0.0, const double &a2=0.0):ppForm(_knots, _vals){
         btype=_btype;
-        a1=_a1;
-        a2=_a2;
-        fit();
+        fit(a1,a2);
     }
     cubic_ppForm(const vector<double> &_knots, const Function &F, 
                     boundaryType _btype=boundaryType::natural):ppForm(_knots, F){
-        btype=_btype;
         //完全样条
         if(_btype==boundaryType::complete){
-            a1=F.derivative(knots[0]);
-            a2=F.derivative(knots[n-1]);
-            fit();
+            fit(F.derivative(knots[0]), F.derivative(knots[n-1]));
         }
 
         //特定样条
         else if(_btype==boundaryType::specified){
-            a1=F.doubleDerivative(knots[0]);
-            a2=F.doubleDerivative(knots[n-1]);
-            fit();
+            fit(F.doubleDerivative(knots[0]), F.doubleDerivative(knots[n-1]));
         }
+
         else{
             fit();
         }

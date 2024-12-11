@@ -6,7 +6,7 @@
 #include"Function.hpp"
 #include"BSpline.hpp"
 #include"Polynomial.hpp"
-#include"ppForm.h"
+#include"ppForm.hpp"
 using namespace std;
 
 double distance(const vector<double> &x, const vector<double> &y){
