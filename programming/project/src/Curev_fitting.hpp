@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 #include<fstream>
 #include"Function.hpp"
-#include"BSpline.hpp"
+#include"BSpline.h"
 #include"Polynomial.hpp"
 #include"ppForm.hpp"
 using namespace std;
@@ -86,63 +86,26 @@ protected:
             pols.push_back(polsY[i]);
         }
     }
-public:
-    plane_curve_fit(vector<double> &knots, const vector<double> &_x_vals, const vector<double> &_y_vals):Curve_Fit(knots){
-        x_vals=_x_vals;
-        y_vals=_y_vals;
-    }
-    void cubic_ppform_fit(){
-        cubic_ppForm s_x(knots, x_vals);
-        polsX=s_x.returnPols();
-        cubic_ppForm s_y(knots, y_vals);
-        polsY=s_y.returnPols();
-        convert();
-    }
-
-    void cubic_bspline_fit(const Function &f1, const Function &f2){
-        BSpline<3> s_x(knots, f1, boundaryType::periodic);
-        polsX=s_x.returnPols();
-        BSpline<3> s_y(knots, f2, boundaryType::periodic);
-        polsY=s_y.returnPols();
-        convert();
-    }
-
-    void linear_ppform_fit(const Function &f1, const Function &f2){
-        linear_ppForm s_x(knots, f1);
-        polsX=s_x.returnPols();
-        linear_ppForm s_y(knots, f2);
-        polsY=s_y.returnPols();
-        convert();
-    }
-
-    void linear_Bspline_fit(const Function &f1, const Function &f2){
-        BSpline<1> s_x(knots, f1, boundaryType::periodic);
-        polsX=s_x.returnPols();
-        BSpline<1> s_y(knots, f2, boundaryType::periodic);
-        polsY=s_y.returnPols();
-        convert();
-    }
-};
 
 
-vector<double> get_t(const int &N, const double &a, const double &b){
-    vector<double> t(N+1);
-    for(int i=0; i<N+1; ++i){
-        t[i]=a+(b-a)*i/N;
+    vector<double> get_t(const int &N, const double &a, const double &b){
+        vector<double> t(N+1);
+        for(int i=0; i<N+1; ++i){
+            t[i]=a+(b-a)*i/N;
+        }
+        return t;
     }
-    return t;
-}
 
-vector<double> getvals(const vector<double> &t, const Function &f){
-    int n=t.size();
-    vector<double> vals(n);
-    for(int i=0; i<n; ++i){
-        vals[i]=f(t[i]);
+    vector<double> getvals(const vector<double> &t, const Function &f){
+        int n=t.size();
+        vector<double> vals(n);
+        for(int i=0; i<n; ++i){
+            vals[i]=f(t[i]);
+        }
+        return vals;
     }
-    return vals;
-}
 
-vector<vector<double>> getpoints(const vector<double> &x, const vector<double> &y){
+    vector<vector<double>> getpoints(const vector<double> &x, const vector<double> &y){
         int n=x.size();
         vector<vector<double>> points(n);
         for(int i=0; i<n; ++i){
@@ -150,18 +113,57 @@ vector<vector<double>> getpoints(const vector<double> &x, const vector<double> &
             points[i].push_back(y[i]);
         }
         return points;
-}
+    }
+    void setknots(const int &N, const double &a, const double &b, const Function &f1, const Function &f2){
+        vector<double> t=get_t(N,a,b);
+        x_vals=getvals(t, f1);
+        y_vals=getvals(t, f2);
+        vector<vector<double>> points=getpoints(x_vals,y_vals);
+        knots=getknots(points);
+    }
+public:
+    plane_curve_fit(const int &n, const double &a, const double &b, const Function &f1, const Function &f2){
+        setknots(n,a,b,f1,f2);
+    }
+    plane_curve_fit(vector<double> &knots, const vector<double> &_x_vals, const vector<double> &_y_vals):Curve_Fit(knots){
+        x_vals=_x_vals;
+        y_vals=_y_vals;
+    }
+    void cubic_ppform_fit(const boundaryType &btype=boundaryType::periodic){
+        cubic_ppForm s_x(knots, x_vals,btype);
+        polsX=s_x.returnPols();
+        cubic_ppForm s_y(knots, y_vals,btype);
+        polsY=s_y.returnPols();
+        convert();
+    }
 
-void Fit(const int &N, const double &a, const double &b, const Function &f1, const Function &f2, const string &filename){
-    vector<double> t=get_t(N,a,b);
-    vector<double> x_val=getvals(t, f1);
-    vector<double> y_val=getvals(t, f2);
-    vector<vector<double>> points=getpoints(x_val,y_val);
-    vector<double> knots=getknots(points);
-    plane_curve_fit s1(knots, x_val, y_val);
-    s1.cubic_ppform_fit();
-    s1.print(filename);
-}
+    void cubic_bspline_fit(const boundaryType &btype=boundaryType::periodic){
+        BSpline<3> s_x(knots,x_vals);
+        polsX=s_x.returnPols();
+        BSpline<3> s_y(knots,y_vals);
+        polsY=s_y.returnPols();
+        convert();
+    }
+
+    void linear_ppform_fit(){
+        linear_ppForm s_x(knots,x_vals);
+        polsX=s_x.returnPols();
+        linear_ppForm s_y(knots,x_vals);
+        polsY=s_y.returnPols();
+        convert();
+    }
+
+    void linear_Bspline_fit(){
+        BSpline<1> s_x(knots, x_vals);
+        polsX=s_x.returnPols();
+        BSpline<1> s_y(knots, y_vals);
+        polsY=s_y.returnPols();
+        convert();
+    }
+};
+
+
+//----------------------------------------------------------
 
 class sphereFit{
 private:

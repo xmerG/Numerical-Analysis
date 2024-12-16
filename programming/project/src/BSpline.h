@@ -130,7 +130,7 @@ private:
     vector<double> b; //记录节点上的函数值，最终会将基函数的系数储存在b中
     vector<vector<Polynomial>> bases; //记录基函数
     vector<Polynomial> pols;  //记录多项式
-    int n;
+    int n;  //the number of bases
     boundaryType btype=boundaryType::non;
 
     void prepare(){
@@ -173,7 +173,7 @@ private:
 
     void getpiecewisePoly(){
         calculateCoefficient();
-        for(int i=0; i<n-3; ++i){
+        for(int i=0; i<n-degree; ++i){
             Polynomial p;
             p=bases[i][3]*Polynomial(vector<double>{b[i]})+bases[i+1][2]*Polynomial(vector<double> {b[i+1]});
             Polynomial p2;
@@ -269,15 +269,21 @@ private:
             getpiecewisePoly();
         }
     }
+    void clear(){
+        A.clear();
+        A.shrink_to_fit();
+    }
 
 public:
     BSpline(){}
-    BSpline(const vector<double> &_knots, const vector<double> &vals, const double &a1, const double &a2, 
-                const boundaryType &_btype==boundaryType::natural):knots{_knots},btype{_btype},b{vals}{
+    BSpline(const vector<double> &_knots, const vector<double> &vals, const double &a1=0.0, const double &a2=0.0, 
+                const boundaryType &_btype=boundaryType::non):knots{_knots},btype{_btype},b{vals}{
+        n=knots.size()-degree-1;
         prepare();
         fit();
-                }
-    BSpline(const vector<double> &_knots, const Function &F, const boundaryType &_btype=boundaryType::natural):knots{_knots}{
+        clear();
+    }
+    BSpline(const vector<double> &_knots, const Function &F, const boundaryType &_btype=boundaryType::non):knots{_knots}{
         n=knots.size()-degree-1;
         b.resize(n,0.0);
         btype=_btype;
@@ -286,6 +292,7 @@ public:
             for(int i=0; i<n; ++i){
                 b[i]=F(knots[i+1]);
             }
+            fit();
         }
         if(degree==3){
             for(int i=1; i<n-1; ++i){
@@ -306,6 +313,7 @@ public:
                 fit();
             }
         }
+        clear();
 
 
     }
@@ -327,11 +335,13 @@ public:
     double calculateValue(const double &x){
         double y=0.0;
         //find the interval containing x
-        for(int i=degree; i<=n; ++i){
-            if(knots[i]<x && x<=knots[i+1]){
-                for(int j=degree; j>=0; --j){
-                    y+=bases[i-j][j](x)*b[i-j];
-                }
+        for(int i=degree; i<=n-1; ++i){
+            if(knots[i]<=x && x<=knots[i+1]){
+                y=pols[i-degree](x);
+                return y;
+                //for(int j=degree; j>=0; --j){
+                    //y+=bases[i-j][j](x)*b[i-j];
+                //}
             }
         }
         return y;
@@ -341,8 +351,7 @@ public:
     void print(const string& filename) {
         // 创建一个 JSON 对象
         nlohmann::json j;
-    
-    
+        j["boundary_condition"]=btype;
         // 将 knots（节点）存储为 JSON 数组
         vector<double> newknots(knots.begin() + degree, knots.end()-degree); 
         j["knots"] = newknots; 

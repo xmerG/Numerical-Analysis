@@ -11,6 +11,16 @@ def f(x):
 def poly(x, coeffs):
     return sum(c * x**idx for idx, c in enumerate(coeffs))
 
+# 边界类型的映射
+boundary_types = {
+    0: "linear",  # no boundary
+    1: "periodic",  # periodic boundary
+    2: "complete",  # complete boundary
+    3: "specified",  # specified boundary
+    4: "natural",  # natural boundary
+    5: "not_a_knot"  # not_a_knot boundary
+}
+
 # 读取文件，解析每个 JSON 数据块
 filename = 'output_C.txt'
 with open(filename, 'r') as file:  
@@ -34,9 +44,13 @@ if not os.path.exists(figure_dir):
 
 # 逐个解析 JSON 数据块并绘制图像
 for idx, data in enumerate(json_blocks):
-    # 提取 knots（节点）和 polynomials（多项式系数）
+    # 提取 boundary_condition, knots（节点）和 polynomials（多项式系数）
+    boundary_condition = data.get("boundary_condition", 0)  # 默认是 0，即 "non"
     knots = data["knots"]
     polynomials = data["polynomials"]
+
+    # 根据 boundary_condition 获取边界类型名称
+    boundary_type = boundary_types.get(boundary_condition, "non")
 
     # 生成全局 x 值和 f(x) 的值
     x_values = np.linspace(-5, 5, 1000)
@@ -67,14 +81,14 @@ for idx, data in enumerate(json_blocks):
         plt.plot(x_interval, y_poly_values, label=f"Polynomial {i+1}", linestyle='-', linewidth=1)
 
     # 设置图形标题和标签
-    plt.title(f"Polynomials and f(x) (Data Block {idx+1})")
+    plt.title(f"Bspline(starts from {-6.0+0.5*(idx//5)}) - Boundary Type: {boundary_type}")
     plt.xlabel("x")
     plt.ylabel("y")
     plt.grid(True)
 
-    # 保存当前图形到 'figure' 文件夹
+    # 保存当前图形到 'figure' 文件夹，文件名中加入边界类型
     output_filename = os.path.join(figure_dir, f"C_{idx+1}.png")
     plt.savefig(output_filename)
     plt.close()  # 关闭当前图形，避免重叠
 
-    print(f"Plot for data {idx+1} saved as {output_filename}")
+    print(f"Plot for data {idx+1} with boundary type '{boundary_type}' saved as {output_filename}")

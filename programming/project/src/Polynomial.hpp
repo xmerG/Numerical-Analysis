@@ -25,6 +25,23 @@ class Polynomial{
         int Degree() const {
             return n;
         }
+
+        //to check if 2 polynomials are equal
+        bool operator==(const Polynomial &p1) const{
+            if(n!=p1.Degree()){
+                return false;
+            }
+            else{
+                vector<double> coef=p1.getcoefficents();
+                for(int i=0;i<=n;++i){
+                    if(coefficients[i]!=coef[i]){
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+
         //实现多项式的加法
         Polynomial operator+(const Polynomial &p1 ) const{
             int n1=max(n,p1.Degree());

@@ -15,7 +15,7 @@ using namespace std;
 class ppForm{
 protected:
     int n;                //记录节点个数
-    boundaryType btype;  //记录边界条件
+    boundaryType btype=boundaryType::non;  //记录边界条件
     vector<double> knots; //记录给定的节点
     vector<double> vals;  //记录节点上的函数值
     vector<Polynomial> pols; //每一个多项式代表了在对应编号区间上得到的插值多项式
@@ -82,16 +82,7 @@ public:
 };
 
 class linear_ppForm:public ppForm{
-public:
-    linear_ppForm(){}
-    linear_ppForm(const vector<double> &_knots, const Function &F):ppForm(_knots, F){
-        linear_ppForm();
-        fit();
-    }
-    linear_ppForm(const vector<double> &_knots, const vector<double> &_vals):ppForm(_knots,_vals){
-        linear_ppForm();
-        fit();
-    }
+private:
     //计算每个区间上的多项式
     void fit(){
         for(int i=0; i<n-1; ++i){
@@ -101,6 +92,16 @@ public:
             Polynomial pi(coeff);
             pols.push_back(pi);
         }
+    }
+public:
+    linear_ppForm(){}
+    linear_ppForm(const vector<double> &_knots, const Function &F):ppForm(_knots, F){
+        linear_ppForm();
+        fit();
+    }
+    linear_ppForm(const vector<double> &_knots, const vector<double> &_vals):ppForm(_knots,_vals){
+        linear_ppForm();
+        fit();
     }
 };
 
@@ -222,15 +223,21 @@ private:
         }
         getPiecePolys();
     }
+    void clear(){
+        A.clear();
+        A.shrink_to_fit();
+    }
 public:
     cubic_ppForm(){}
     cubic_ppForm(const vector<double> &_knots, const vector<double> &_vals, 
                     boundaryType _btype=boundaryType::natural, const double&a1=0.0, const double &a2=0.0):ppForm(_knots, _vals){
         btype=_btype;
         fit(a1,a2);
+        clear();
     }
     cubic_ppForm(const vector<double> &_knots, const Function &F, 
                     boundaryType _btype=boundaryType::natural):ppForm(_knots, F){
+        btype=_btype;
         //完全样条
         if(_btype==boundaryType::complete){
             fit(F.derivative(knots[0]), F.derivative(knots[n-1]));
@@ -244,6 +251,7 @@ public:
         else{
             fit();
         }
+        clear();
     }
 
 

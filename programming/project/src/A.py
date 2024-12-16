@@ -11,6 +11,16 @@ def f(x):
 def poly(x, coeffs):
     return sum(c * x**idx for idx, c in enumerate(coeffs))
 
+# 定义边界类型映射
+boundary_type_mapping = {
+    0: "linear",
+    1: "cubic Periodic spline",
+    2: "cubic Complete spline",
+    3: "cubic Specified spline",
+    4: "cubic Natural spline",
+    5: "cubic Not a Knot spline"
+}
+
 # 读取文件，解析每个 JSON 数据块
 filename = 'output_A.txt'
 with open(filename, 'r') as file:  
@@ -37,6 +47,17 @@ for idx, data in enumerate(json_blocks):
     # 提取 knots（节点）和 polynomials（多项式系数）
     knots = data["knots"]
     polynomials = data["polynomials"]
+    
+    # 提取边界条件类型
+    boundary_conditions = data.get("boundary_conditions", None)
+    
+    if boundary_conditions is not None:
+        boundary_type = boundary_conditions  # 如果边界条件是整数类型
+    else:
+        boundary_type = 0  # 默认类型为 "No Boundary"
+
+    # 获取实际边界条件名称
+    boundary_condition_name = boundary_type_mapping.get(boundary_type, "Unknown Boundary")
 
     # 生成全局 x 值和 f(x) 的值
     x_values = np.linspace(-1, 1, 1000)
@@ -67,12 +88,12 @@ for idx, data in enumerate(json_blocks):
         plt.plot(x_interval, y_poly_values, label=f"Polynomial {i+1}", linestyle='-', linewidth=1)
 
     # 设置图形标题和标签
-    plt.title(f"Polynomials and f(x) (Data Block {idx+1})")
+    plt.title(f"pp-Form ({5*2**(idx//6)} knots) - {boundary_condition_name}")
     plt.xlabel("x")
     plt.ylabel("y")
     plt.grid(True)
 
-    # 保存当前图形到 'figure' 文件夹
+    # 保存当前图形到 'figure' 文件夹，文件名包含边界条件
     output_filename = os.path.join(figure_dir, f"A_{idx+1}.png")
     plt.savefig(output_filename)
     plt.close()  # 关闭当前图形，避免重叠

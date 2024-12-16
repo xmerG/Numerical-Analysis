@@ -1,7 +1,7 @@
 #include<iostream>
 #include<fstream>
 #include"Function.hpp"
-#include"BSpline.hpp"
+#include"BSpline.h"
 using namespace std;
 
 class Runge:public Function{
@@ -19,17 +19,38 @@ vector<double> getknots(const double &a, const int &n, const int &degree){
     return v;
 }
 
+void print(const vector<double> &e){
+    cout<<"the errors at specific points are"<<" ";
+    for(int i=0; i<e.size(); ++i){
+        cout<<e[i]<<" ";
+    }
+    cout<<endl;
+}
 
+vector<double> p{-3.5, -3.0, -0.5, 0.0, 0.5, 3.0, 3.5};
+template <int d>
+void Error(BSpline<d> &b, const Function &f){
+    vector<double> error;
+    for(int i=0; i<p.size(); ++i){
+        error.push_back(f(p[i])-b.calculateValue(p[i]));
+    }
+    print(error);
+}
 
 void linear_test(const vector<double> &v){
     Runge f;
     BSpline<1> b(v,f);
     b.print("output_C.txt");
+    Error(b, f);
 }
+
+
+
 
 void cubic_test(const vector<double> &v){
     Runge f;
-    BSpline<3> b1(v,f);
+    BSpline<3> b1(v,f,boundaryType::natural);
+    vector<double> error;
     b1.print("output_C.txt");
 
     BSpline<3> b2(v,f,boundaryType::complete);
@@ -40,6 +61,11 @@ void cubic_test(const vector<double> &v){
 
     BSpline<3> b4(v,f,boundaryType::specified);
     b4.print("output_C.txt");
+    
+    Error(b1, f);
+    Error(b2, f);
+    Error(b3, f);
+    Error(b4, f);
 }
 
 void test(const double &a, const int &b){
