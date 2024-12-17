@@ -2,6 +2,7 @@
 #include<fstream>
 #include"Function.hpp"
 #include"BSpline.h"
+#include"ppForm.hpp"
 using namespace std;
 
 class Runge:public Function{
@@ -45,10 +46,12 @@ void linear_test(const vector<double> &v){
 }
 
 
-
+vector<double> u{-5.0, -4.0, -3.0, -2.0, -1.0, 0, 1.0, 2.0, 3.0, 4.0, 5.0};
 
 void cubic_test(const vector<double> &v){
     Runge f;
+    cubic_ppForm b(u, f, boundaryType::natural);
+    b.print("output_C.txt");
     BSpline<3> b1(v,f,boundaryType::natural);
     vector<double> error;
     b1.print("output_C.txt");

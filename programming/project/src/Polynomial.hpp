@@ -25,20 +25,35 @@ class Polynomial{
         int Degree() const {
             return n;
         }
+        //to check if 2 polynomials are equal by neglecting small errors
+        bool notequal(const Polynomial &p1) const{
+            if(n!=p1.Degree()){
+                return true;
+            }
+            else{
+                vector<double> coef=p1.getcoefficents();
+                for(int i=0;i<=n;++i){
+                    if(abs(coefficients[i]-coef[i])<1e-6){
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
 
         //to check if 2 polynomials are equal
-        bool operator==(const Polynomial &p1) const{
+        bool operator!=(const Polynomial &p1) const{
             if(n!=p1.Degree()){
-                return false;
+                return true;
             }
             else{
                 vector<double> coef=p1.getcoefficents();
                 for(int i=0;i<=n;++i){
                     if(coefficients[i]!=coef[i]){
-                        return false;
+                        return true;
                     }
                 }
-                return true;
+                return false;
             }
         }
 

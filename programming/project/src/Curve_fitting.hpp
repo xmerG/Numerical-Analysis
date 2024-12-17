@@ -10,6 +10,11 @@
 using namespace std;
 using json = nlohmann::json;
 
+enum class knotsType {
+    uniform,
+    cumulate_chordal
+};
+
 
 double distance(const vector<double> &x, const vector<double> &y){
     if(x.size()!=y.size()){
@@ -24,7 +29,6 @@ double distance(const vector<double> &x, const vector<double> &y){
         return sqrt(d);
     }
 }
-
 vector<double> getknots(const vector<vector<double>> &points) {
     double t=0.0;
     int n=points.size();
@@ -36,12 +40,14 @@ vector<double> getknots(const vector<vector<double>> &points) {
     return knots;
 }
 
+
 class Curve_Fit{
 protected:
     vector<double> knots; //knots
     vector<Polynomial> pols;  //polynomials x_1(t), y_1(t), x_2(t), y_2(t)...
 
 public:
+    Curve_Fit(){}
     Curve_Fit(vector<double> &_knots):knots{_knots}{}
     void print(const string& filename) {
         nlohmann::json j;
@@ -87,13 +93,18 @@ protected:
         }
     }
 
-
     vector<double> get_t(const int &N, const double &a, const double &b){
         vector<double> t(N+1);
         for(int i=0; i<N+1; ++i){
             t[i]=a+(b-a)*i/N;
         }
         return t;
+    }
+
+    void uniknots(const int &N, const double &a, const double &b, const Function &f1, const Function &f2){
+        knots=get_t(N,a,b);
+        x_vals=getvals(knots, f1);
+        y_vals=getvals(knots, f2);
     }
 
     vector<double> getvals(const vector<double> &t, const Function &f){
@@ -121,50 +132,90 @@ protected:
         vector<vector<double>> points=getpoints(x_vals,y_vals);
         knots=getknots(points);
     }
+    public:
+        plane_curve_fit(){}
+        /*plane_curve_fit(const int &n, const double &a, const double &b, const Function &f1, 
+                        const Function &f2,const knotsType &t=knotsType::cumulate_chordal){
+            if(t==knotsType::cumulate_chordal){
+                setknots(n,a,b,f1,f2);
+            }
+            else{
+                uniknots(n,a,b,f1,f2);
+            }
+        }
+        void cubic_pp_fit(const Function &f1, const Function &f2,
+                        const boundaryType &btype=boundaryType::periodic){
+            cubic_ppForm s(knots,f1,btype);
+            cubic_ppForm
+
+            
+        }*/
+};
+
+class cubic_bspline_fit:public plane_curve_fit{
 public:
-    plane_curve_fit(const int &n, const double &a, const double &b, const Function &f1, const Function &f2){
-        setknots(n,a,b,f1,f2);
-    }
-    plane_curve_fit(vector<double> &knots, const vector<double> &_x_vals, const vector<double> &_y_vals):Curve_Fit(knots){
-        x_vals=_x_vals;
-        y_vals=_y_vals;
-    }
-    void cubic_ppform_fit(const boundaryType &btype=boundaryType::periodic){
-        cubic_ppForm s_x(knots, x_vals,btype);
-        polsX=s_x.returnPols();
-        cubic_ppForm s_y(knots, y_vals,btype);
-        polsY=s_y.returnPols();
+    cubic_bspline_fit(){}
+    cubic_bspline_fit(const int &n, const double &a, const double &b, 
+                    const Function &f1, const Function &f2, const boundaryType &btype=boundaryType::natural,
+                    const knotsType &t=knotsType::cumulate_chordal){
+        if(t==knotsType::uniform){
+            uniknots(n, a, b, f1, f2);
+        }
+        else{
+            setknots(n,a,b,f1,f2);
+        }
+        double c=knots[0]-knots[1];
+        double d=knots[knots.size()-1]-knots[knots.size()-2];
+        double e=knots[knots.size()-1];
+        for(int i=1; i<=3;++i){
+            knots.insert(knots.begin(),c*i);
+            knots.push_back(e+1+d*i);
+        }
+        double x1=0.0;
+        double x2=0.0;
+        double y1=0.0;
+        double y2=0.0;
+        BSpline<3> b_x(knots, x_vals, btype);
+        BSpline<3> b_y(knots, y_vals, btype);
+        polsX=b_x.returnPols();
+        polsY=b_y.returnPols();
         convert();
+        for(int i=0; i<3; ++i){
+            knots.erase(knots.begin());
+            knots.pop_back();
+        }
+    } 
+    vector<Polynomial> getpol(){
+        return pols;
     }
+};
 
-    void cubic_bspline_fit(const boundaryType &btype=boundaryType::periodic){
-        BSpline<3> s_x(knots,x_vals);
-        polsX=s_x.returnPols();
-        BSpline<3> s_y(knots,y_vals);
-        polsY=s_y.returnPols();
+
+class cubic_ppform_fit:public plane_curve_fit{
+public:
+    cubic_ppform_fit(const int &n, const double &a, const double &b, const Function &f1, const Function &f2,
+                        const boundaryType &btype=boundaryType::natural,
+                        const knotsType &t=knotsType::cumulate_chordal){
+        if(t==knotsType::uniform){
+            uniknots(n,a,b,f1,f2);
+        }
+        else{
+            setknots(n,a,b,f1,f2);
+        }
+        cubic_ppForm b_x(knots, x_vals, btype);
+        cubic_ppForm b_y(knots, y_vals, btype);
+        polsX=b_x.returnPols();
+        polsY=b_y.returnPols();
         convert();
     }
-
-    void linear_ppform_fit(){
-        linear_ppForm s_x(knots,x_vals);
-        polsX=s_x.returnPols();
-        linear_ppForm s_y(knots,x_vals);
-        polsY=s_y.returnPols();
-        convert();
-    }
-
-    void linear_Bspline_fit(){
-        BSpline<1> s_x(knots, x_vals);
-        polsX=s_x.returnPols();
-        BSpline<1> s_y(knots, y_vals);
-        polsY=s_y.returnPols();
-        convert();
+    vector<Polynomial> getpol(){
+        return pols;
     }
 };
 
 
 //----------------------------------------------------------
-
+/*
 class sphereFit{
 private:
     vector<vector<double>> points;
@@ -218,4 +269,4 @@ public:
             cerr << "Error opening file " << filename << endl;
         }
     }
-};
+};*/

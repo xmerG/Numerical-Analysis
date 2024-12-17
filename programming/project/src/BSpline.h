@@ -276,11 +276,20 @@ private:
 
 public:
     BSpline(){}
-    BSpline(const vector<double> &_knots, const vector<double> &vals, const double &a1=0.0, const double &a2=0.0, 
-                const boundaryType &_btype=boundaryType::non):knots{_knots},btype{_btype},b{vals}{
+    BSpline(const vector<double> &_knots, const vector<double> &vals,const boundaryType &_btype=boundaryType::non,
+                const double &a1=0.0, const double &a2=0.0):knots{_knots},btype{_btype}{
         n=knots.size()-degree-1;
+        b.resize(n,0.0);
         prepare();
-        fit();
+        if(degree==1){
+            b=vals;
+        }
+        else if(degree==3){
+            for(int i=1; i<n-1; ++i){
+                b[i]=vals[i-1];
+            }
+            fit(a1,a2);
+        }
         clear();
     }
     BSpline(const vector<double> &_knots, const Function &F, const boundaryType &_btype=boundaryType::non):knots{_knots}{
