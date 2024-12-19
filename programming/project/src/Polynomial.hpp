@@ -33,7 +33,7 @@ class Polynomial{
             else{
                 vector<double> coef=p1.getcoefficents();
                 for(int i=0;i<=n;++i){
-                    if(abs(coefficients[i]-coef[i])<1e-6){
+                    if(abs(coefficients[i]-coef[i])<1e-5){
                         return true;
                     }
                 }

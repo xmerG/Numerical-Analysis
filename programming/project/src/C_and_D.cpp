@@ -56,9 +56,12 @@ void cubic_test(const vector<double> &v){
     vector<double> error;
     b1.print("output_C.txt");
 
+
     BSpline<3> b2(v,f,boundaryType::complete);
     b2.print("output_C.txt");
 
+    cubic_ppForm b5(u, f, boundaryType::periodic);
+    b5.print("output_C.txt");
     BSpline<3> b3(v,f,boundaryType::periodic);
     b3.print("output_C.txt");
 

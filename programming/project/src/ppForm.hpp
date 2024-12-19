@@ -190,7 +190,7 @@ private:
 
         //周期样条
         else if(btype==boundaryType::periodic){
-            vals[n-2]=vals[1];
+            vals[n-1]=vals[0];
             A[0][0]=1.0;
             A[0][n-1]=-1.0;
             double delta1=knots[1]-knots[0];
