@@ -190,7 +190,6 @@ private:
 
         //周期样条
         else if(btype==boundaryType::periodic){
-            vals[n-1]=vals[0];
             A[0][0]=1.0;
             A[0][n-1]=-1.0;
             double delta1=knots[1]-knots[0];
@@ -226,13 +225,21 @@ private:
     void clear(){
         A.clear();
         A.shrink_to_fit();
+        b.clear();
+        b.shrink_to_fit();
     }
 public:
     cubic_ppForm(){}
     cubic_ppForm(const vector<double> &_knots, const vector<double> &_vals, 
                     boundaryType _btype=boundaryType::natural, const double&a1=0.0, const double &a2=0.0):ppForm(_knots, _vals){
         btype=_btype;
-        fit(a1,a2);
+        if(btype==boundaryType::periodic){
+            vals[n-1]=vals[0];
+            fit();
+        }
+        else{
+            fit(a1,a2);
+        }
         clear();
     }
     cubic_ppForm(const vector<double> &_knots, const Function &F, 
@@ -246,6 +253,10 @@ public:
         //特定样条
         else if(_btype==boundaryType::specified){
             fit(F.doubleDerivative(knots[0]), F.doubleDerivative(knots[n-1]));
+        }
+        else if(_btype==boundaryType::periodic){
+            vals[n-1]=vals[0];
+            fit();
         }
 
         else{

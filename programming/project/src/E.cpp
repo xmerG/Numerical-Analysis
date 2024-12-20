@@ -94,6 +94,9 @@ int main(){
     Fitting(10, 0.0, 6*pi, f1, f2,boundaryType::complete,"E_curve_r2.txt");
     Fitting(40, 0.0, 6*pi, f1, f2,boundaryType::complete,"E_curve_r2.txt");
     Fitting(160, 0.0, 6*pi, f1, f2,boundaryType::complete,"E_curve_r2.txt");
+    Fitting(10, 0.0, 6*pi, f1, f2,boundaryType::periodic,"E_curve_r2.txt");
+    Fitting(40, 0.0, 6*pi, f1, f2,boundaryType::periodic,"E_curve_r2.txt");
+    Fitting(160, 0.0, 6*pi, f1, f2,boundaryType::periodic,"E_curve_r2.txt");
     F2_x f3;
     F2_y f4;
     Fitting(10, -pi, pi, f3, f4,boundaryType::periodic,"E_curve_r1.txt");
