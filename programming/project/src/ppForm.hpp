@@ -201,7 +201,7 @@ private:
             b[0]=0.0;
             b[n-1]=3*k1*delta2+3*kn*delta1;
         }
-
+//-------------------------------to be modified
         //not_a_knot样条
         else if(btype==boundaryType::not_a_knot){
             //x2处三阶导数存在
@@ -209,15 +209,15 @@ private:
             double delta2=knots[2]-knots[1];
             A[0][0]=pow(delta2,2);
             A[0][1]=(knots[2]-knots[0])*(knots[2]+knots[0]-2*knots[1]);
-            A[0][2]=pow(delta1, 2);
+            A[0][2]=-pow(delta1, 2);
             b[0]=2*k1*pow(delta2,2)-2*divideddifference(knots[2], knots[1], vals[2], vals[1])*pow(delta1, 2);
             //x_{n-1}处三阶导数存在
             double delta3=knots[n-2]-knots[n-3];
             double delta4=knots[n-1]-knots[n-2];
             A[n-1][n-3]=pow(delta4, 2);
             A[n-1][n-2]=(knots[n-1]-knots[n-3])*(knots[n-1]+knots[n-3]-2*knots[n-2]);
-            A[n-1][n-2]=pow(delta3, 2);
-            b[n-1]=2*divideddifference(knots[n-2], knots[n-3], vals[n-2], vals[n-3])*delta4-2*kn*delta3;
+            A[n-1][n-1]=-pow(delta3, 2);
+            b[n-1]=2*divideddifference(knots[n-2], knots[n-3], vals[n-2], vals[n-3])*pow(delta4,2)-2*kn*pow(delta3,2);
             
         }
         getPiecePolys();

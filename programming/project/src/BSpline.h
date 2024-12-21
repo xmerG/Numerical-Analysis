@@ -116,6 +116,23 @@ public:
             return 0.0;
         }
     } 
+    //3rd-derivative
+    double left_thirdDerivatiev(const double &x) const{
+        for(int i=0; i<=knots.size()-2; ++i){
+            if(knots[i]<x<=knots[i+1]){
+                return pols[i].thirdDerivative(x);
+            }
+        }
+        return 0;
+    }
+
+    double right_thirdDerivative(const double &x) const{
+        for(int i=0; i<knots.size()-2; ++i){
+            if(knots[i]<=x<knots[i+1]){
+                return pols[i].thirdDerivative(x);
+            }
+        }
+    }
 
 
 
@@ -265,7 +282,22 @@ private:
             }
 
             // not-a-knot spline
-            else if(btype==boundaryType::not_a_knot){}
+            else if(btype==boundaryType::not_a_knot){
+                //left_3rd derivative-right_3rd_derivative=0
+                double x=knots[degree+1];
+                A[0][0]=bases[0][3].thirdDerivative(x);
+                A[0][1]=bases[1][2].thirdDerivative(x)-bases[1][3].thirdDerivative(x);
+                A[0][2]=bases[2][1].thirdDerivative(x)-bases[2][2].thirdDerivative(x);
+                A[0][3]=bases[3][0].thirdDerivative(x)-bases[3][1].thirdDerivative(x);
+                A[0][4]=-bases[4][0].thirdDerivative(x);
+                //right_3rd_derivative-left_3rd_derivative=0
+                double y=knots[n-1];
+                A[n-1][n-1]=bases[n-1][0].thirdDerivative(y);
+                A[n-1][n-2]=bases[n-2][1].thirdDerivative(y)-bases[n-2][0].thirdDerivative(y);
+                A[n-1][n-3]=bases[n-3][2].thirdDerivative(y)-bases[n-3][1].thirdDerivative(y);
+                A[n-1][n-4]=bases[n-4][3].thirdDerivative(y)-bases[n-4][2].thirdDerivative(y);
+                A[n-1][n-5]=-bases[n-5][3].thirdDerivative(y);
+            }
             getpiecewisePoly();
         }
     }

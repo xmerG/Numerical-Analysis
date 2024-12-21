@@ -84,6 +84,21 @@ void Fitting(const int &n, const double &a, const double &b, const Function &f1,
     bool check2=is_almost_equal(p1,p2);
     cout<<"the consequence of 2 forms of spline is by neglecting small error "<<check2<<endl;
 }
+void sphereFit(const int &n, const double &a, const double &b, const Function &f1,
+                const Function &f2, const string &filename){
+    spherefit fit1(n,a,b,f1,f2,knotsType::cumulate_chordal);
+    fit1.cubic_ppFit(boundaryType::periodic);
+    fit1.print(filename);
+    /*fit1.cubic_ppFit(boundaryType::natural);
+    fit1.print(filename);
+
+    spherefit fit2(n,a,b,f1,f2,knotsType::uniform);
+    fit2.cubic_ppFit(boundaryType::periodic);
+    fit2.print(filename);
+    fit2.cubic_ppFit(boundaryType::natural);
+    fit2.print(filename);*/
+
+}
 
 int main(){
     F1_x f1;
@@ -91,24 +106,31 @@ int main(){
     Fitting(10, 0.0, 6*pi, f1, f2,boundaryType::natural,"E_curve_r2.txt");
     Fitting(40, 0.0, 6*pi, f1, f2,boundaryType::natural,"E_curve_r2.txt");
     Fitting(160, 0.0, 6*pi, f1, f2,boundaryType::natural,"E_curve_r2.txt");
+    
     Fitting(10, 0.0, 6*pi, f1, f2,boundaryType::complete,"E_curve_r2.txt");
     Fitting(40, 0.0, 6*pi, f1, f2,boundaryType::complete,"E_curve_r2.txt");
     Fitting(160, 0.0, 6*pi, f1, f2,boundaryType::complete,"E_curve_r2.txt");
-    Fitting(10, 0.0, 6*pi, f1, f2,boundaryType::periodic,"E_curve_r2.txt");
-    Fitting(40, 0.0, 6*pi, f1, f2,boundaryType::periodic,"E_curve_r2.txt");
-    Fitting(160, 0.0, 6*pi, f1, f2,boundaryType::periodic,"E_curve_r2.txt");
+    
+    Fitting(10, 0.0, 6*pi, f1, f2,boundaryType::not_a_knot,"E_curve_r2.txt");
+    Fitting(40, 0.0, 6*pi, f1, f2,boundaryType::not_a_knot,"E_curve_r2.txt");
+    Fitting(160, 0.0, 6*pi, f1, f2,boundaryType::not_a_knot,"E_curve_r2.txt");
     F2_x f3;
     F2_y f4;
     Fitting(10, -pi, pi, f3, f4,boundaryType::periodic,"E_curve_r1.txt");
     Fitting(40, -pi, pi, f3, f4,boundaryType::periodic,"E_curve_r1.txt");
     Fitting(160, -pi, pi, f3, f4,boundaryType::periodic,"E_curve_r1.txt");
+    
     Fitting(10, -pi, pi, f3, f4,boundaryType::natural,"E_curve_r1.txt");
     Fitting(40, -pi, pi, f3, f4,boundaryType::natural,"E_curve_r1.txt");
     Fitting(160, -pi, pi, f3, f4,boundaryType::natural,"E_curve_r1.txt");
+    
     Fitting(10, -pi, pi, f3, f4,boundaryType::complete,"E_curve_r1.txt");
     Fitting(40, -pi, pi, f3, f4,boundaryType::complete,"E_curve_r1.txt");
     Fitting(160, -pi, pi, f3, f4,boundaryType::complete,"E_curve_r1.txt");
 
+    Fitting(10, -pi, pi, f3, f4,boundaryType::not_a_knot,"E_curve_r1.txt");
+    Fitting(40, -pi, pi, f3, f4,boundaryType::not_a_knot,"E_curve_r1.txt");
+    Fitting(160, -pi, pi, f3, f4,boundaryType::not_a_knot,"E_curve_r1.txt");
     /*
     Fit(10, 0, 6*pi, f1, f2,"E_curve_r2.txt");
     Fit(40, 0, 6*pi, f1, f2,"E_curve_r2.txt");
@@ -119,11 +141,9 @@ int main(){
     Fit(40, -pi, pi, f3, f4,"E_curve_r1.txt");
 
     Fit(160, -pi, pi, f3, f4,"E_curve_r1.txt");*/
-/*
+
     F3_x f5;
     F3_y f6;
-    sphereFit fit1(40,0.0,2*pi,f5,f6);
-    fit1.cubic_ppfit();
-    fit1.print("E_spherecurve.txt");*/
+    sphereFit(40,0.0, 2*pi, f5, f6, "sphere_curve.csv");
     return 0;
 }

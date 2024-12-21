@@ -50,8 +50,6 @@ vector<double> u{-5.0, -4.0, -3.0, -2.0, -1.0, 0, 1.0, 2.0, 3.0, 4.0, 5.0};
 
 void cubic_test(const vector<double> &v){
     Runge f;
-    cubic_ppForm b(u, f, boundaryType::natural);
-    b.print("output_C.txt");
     BSpline<3> b1(v,f,boundaryType::natural);
     vector<double> error;
     b1.print("output_C.txt");
@@ -60,13 +58,14 @@ void cubic_test(const vector<double> &v){
     BSpline<3> b2(v,f,boundaryType::complete);
     b2.print("output_C.txt");
 
-    cubic_ppForm b5(u, f, boundaryType::periodic);
-    b5.print("output_C.txt");
     BSpline<3> b3(v,f,boundaryType::periodic);
     b3.print("output_C.txt");
 
     BSpline<3> b4(v,f,boundaryType::specified);
     b4.print("output_C.txt");
+
+    BSpline<3> b5(v,f,boundaryType::not_a_knot);
+    b5.print("output_C.txt");
     
     Error(b1, f);
     Error(b2, f);

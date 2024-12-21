@@ -134,12 +134,31 @@ class Polynomial{
             }
         }
 
+        Polynomial thirdDerivative() const{
+            if(n<=2){
+                Polynomial p1;
+                return p1;
+            }
+            else{
+                vector<double> d(n-2);
+                for(int i=0; i<n-2; ++i){
+                    d[i]=coefficients[i+3]*(i+3)*(i+2)*(i+1);
+                }
+                return Polynomial(d);
+            }
+        }
+
+        double thirdDerivative(const double &x) const{
+            Polynomial p1=thirdDerivative();
+            return p1(x);
+        }
+
         //指定点求导数
 
         double derivative(const double &x){
-            Polynomial p;
-            p=derivative();
-            return p(x);
+            Polynomial p1;
+            p1=derivative();
+            return p1(x);
 
         }
 

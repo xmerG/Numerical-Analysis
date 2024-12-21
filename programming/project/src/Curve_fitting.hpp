@@ -152,6 +152,52 @@ protected:
         }*/
 };
 
+class spherefit:public plane_curve_fit{
+private:
+    vector<vector<double>> points;
+public:
+    spherefit(const int &n, const double &a, const double &b, const Function &f1, const Function &f2, const knotsType &ktype){
+        if(ktype==knotsType::cumulate_chordal){
+            setknots(n,a,b,f1,f2);
+        }
+        else{
+            uniknots(n,a,b,f1,f2);
+        }
+    }
+    void cubic_ppFit(const boundaryType &btype){
+        cubic_ppForm Sx(knots,x_vals);
+        cubic_ppForm Sy(knots, y_vals);
+        vector<Polynomial> p_x=Sx.returnPols();
+        vector<Polynomial> p_y=Sy.returnPols();
+        for(int i=0; i<p_x.size(); ++i){
+            for(double j=knots[i];j<knots[i+1];j+=0.001){
+                double a=p_x[i](j);
+                double b=p_y[i](j);
+                double c=pow(a,2)+pow(b,2);
+                vector<double> p{2.0*a/(1+c), 2.0*b/(1+c), (1-c)/(1+c)};
+                points.push_back(p);    
+            }
+        }
+    }
+    void print(const std::string& filename) {
+        // Open the file
+        std::ofstream file(filename);
+        if (file.is_open()) {
+            // Write header if needed (optional)
+            file << "x,y,z\n";
+            
+            // Write points to the file
+            for (const auto& point : points) {
+                file << point[0] << "," << point[1] << "," << point[2] << "\n";
+            }
+            file.close();
+            std::cout << "Data successfully written to " << filename << std::endl;
+        } else {
+            std::cerr << "Failed to open file " << filename << std::endl;
+        }
+    }
+};
+
 class cubic_bspline_fit:public plane_curve_fit{
 public:
     cubic_bspline_fit(){}
