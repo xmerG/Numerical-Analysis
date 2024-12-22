@@ -1,166 +1,134 @@
 import json
-import numpy as np
 import matplotlib.pyplot as plt
 import os
+import numpy as np
 
-a=np.sqrt(3)
+# boundaryType 枚举映射
+boundaryType_dict = {
+    0: 'non',
+    1: 'periodic',
+    2: 'complete',
+    3: 'specified',
+    4: 'natural',
+    5: 'not_a_knot'
+}
 
-# 定义多项式的计算函数（按照升序系数）
-def poly(x, coeffs):
-    return sum(c * x**idx for idx, c in enumerate(coeffs))
+# knotsType 枚举映射
+knotsType_dict = {
+    0: 'uniform',
+    1: 'cumulate_chordal'
+}
 
-# 定义 x(s) 和 y(s) 函数
-def x_func(s):
-    return np.sin(s) + s * np.cos(s)
+# 读取 JSON 数据
+def load_json(filename):
+    with open(filename, 'r') as file:
+        return json.load(file)
 
-def y_func(s):
-    return np.cos(s) - s * np.sin(s)
-
-# 定义 x(s) 和 y(s) 函数
-def x2_func(s):
-    return np.cos(s)*a
-
-def y2_func(s):
-    return 2*(np.sin(s)*a+np.sqrt(a*np.abs(np.cos(s))))/3
-
-# 读取文件，解析每个 JSON 数据块
-filename = 'E_curve_r2.txt'
-with open(filename, 'r') as file:  
-    # 文件中多个 JSON 数据块用换行分隔
-    blocks = file.read().strip().split("\n}\n{")
-    json_blocks = []
-    for block in blocks:
-        # 修复分隔导致的 JSON 格式问题
-        if not block.startswith("{"):
-            block = "{" + block
-        if not block.endswith("}"):
-            block = block + "}"
-        json_blocks.append(json.loads(block))
-
+# 绘制图形并保存为文件
+def plot_data(data, filename, figure_dir='figures'):
 # 定位到项目根目录并确保 'figure' 文件夹存在
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # 定位到项目根目录
-figure_dir = os.path.join(project_root, "figure")  # figure 文件夹路径
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # 定位到项目根目录
+    figure_dir = os.path.join(project_root, "figure")  # figure 文件夹路径
 
-if not os.path.exists(figure_dir):
-    os.makedirs(figure_dir)
+    # 根据文件名判断绘制哪种额外的曲线
+    if 'E_curve2.json' in filename:
+        # 对应的公式 x(t) = sin(t) + t * cos(t), y(t) = cos(t) - t * sin(t)
+        t_values = np.linspace(0, 6 * np.pi, 100)
+        x_t = np.sin(t_values) + t_values * np.cos(t_values)
+        y_t = np.cos(t_values) - t_values * np.sin(t_values)
+    elif 'E_curve1.json' in filename:
+        # 对应的公式 x(t) = sqrt(3) * cos(t), y(t) = (sqrt(3) * sin(t) + sqrt(abs(x(t)))) * 2 / 3
+        t_values = np.linspace(0, 2 * np.pi, 100)
+        x_t = np.sqrt(3) * np.cos(t_values)
+        y_t = (np.sqrt(3) * np.sin(t_values) + np.sqrt(np.abs(x_t))) * 2 / 3
+    else:
+        raise ValueError("Unknown JSON file format!")
 
-# 逐个解析 JSON 数据块并绘制图像
-for idx, data in enumerate(json_blocks):
-    # 提取 knots（节点）和 polynomials（多项式系数）
-    knots = data["knots"]
-    polynomials = data["polynomials"]
+    # 每三个数据块为一组，生成一张图片
+    for i in range(0, len(data), 3):
+        # 创建一个包含3个子图的图形
+        fig, axes = plt.subplots(1, 3, figsize=(18, 6))  # 每行3个子图
 
-    # 创建一个图形
-    plt.figure(figsize=(8, 6))
+        # 获取当前三组数据块
+        block1 = data[i]
+        block2 = data[i + 1] if i + 1 < len(data) else None  # 保护性代码，避免越界
+        block3 = data[i + 2] if i + 2 < len(data) else None  # 保护性代码，避免越界
 
-    # 生成全局 s 值并计算 x(s) 和 y(s) 的值
-    s_values = np.linspace(0, 6 * np.pi, 1000)
-    x_values_func = x_func(s_values)
-    y_values_func = y_func(s_values)
+        # 将 boundaryType 和 knotsType 转换为对应的字符串
+        boundary1 = boundaryType_dict.get(block1['boundaryType'], 'unknown')
+        knots1 = knotsType_dict.get(block1['knotsType'], 'unknown')
 
-    # 绘制真实的 x(s) 和 y(s) 函数曲线
-    plt.plot(x_values_func, y_values_func, label="True Curve (x(s), y(s))", color='black', linewidth=0.5)
+        # 提取并绘制第一个数据块
+        x_values1 = [point[0] for point in block1['points']]
+        y_values1 = [point[1] for point in block1['points']]
+        axes[0].plot(x_values1, y_values1, label=f"boundaryType: {boundary1}, knotsType: {knots1}", color='blue')
 
-    # 逐个多项式，计算并绘制每个区间的 (x(t), y(t)) 曲线
-    for i in range(0, len(polynomials), 2):  # 每两个多项式为一组
-        # 获取当前组的两个多项式系数
-        x_coeffs = polynomials[i]["coefficients"]
-        y_coeffs = polynomials[i+1]["coefficients"]
+        # 如果有第二个数据块，将 boundaryType 和 knotsType 转换为字符串
+        if block2:
+            boundary2 = boundaryType_dict.get(block2['boundaryType'], 'unknown')
+            knots2 = knotsType_dict.get(block2['knotsType'], 'unknown')
 
-        # 获取当前区间的起始和结束节点
-        x_start = knots[i//2]
-        x_end = knots[i//2 + 1]
+            # 提取并绘制第二个数据块
+            x_values2 = [point[0] for point in block2['points']]
+            y_values2 = [point[1] for point in block2['points']]
+            axes[1].plot(x_values2, y_values2, label=f"boundaryType: {boundary2}, knotsType: {knots2}", color='green')
 
-        # 生成当前区间内的 t 值
-        t_values = np.linspace(x_start, x_end, 100)
+        # 如果有第三个数据块，将 boundaryType 和 knotsType 转换为字符串
+        if block3:
+            boundary3 = boundaryType_dict.get(block3['boundaryType'], 'unknown')
+            knots3 = knotsType_dict.get(block3['knotsType'], 'unknown')
 
-        # 计算当前区间内的 x(t) 和 y(t) 值
-        x_values_poly = np.array([poly(t, x_coeffs) for t in t_values])
-        y_values_poly = np.array([poly(t, y_coeffs) for t in t_values])
+            # 提取并绘制第三个数据块
+            x_values3 = [point[0] for point in block3['points']]
+            y_values3 = [point[1] for point in block3['points']]
+            axes[2].plot(x_values3, y_values3, label=f"boundaryType: {boundary3}, knotsType: {knots3}", color='orange')
 
-        # 绘制当前区间的 (x(t), y(t)) 曲线
-        plt.plot(x_values_poly, y_values_poly, label=f"Poly Group {i//2 + 1} (x(t), y(t))", linestyle='-', linewidth=1)
+        # 在每个子图上绘制额外的曲线
+        axes[0].plot(x_t, y_t, label="x(t), y(t) curve", color='red', linestyle='--')
 
-    # 设置图形标题和标签
-    plt.title(f"Polynomials and True Curve (Data Block {idx+1})")
-    plt.xlabel("x")
-    plt.ylabel("y")
-    plt.grid(True)
-    # 保存当前图形到 'figure' 文件夹
-    output_filename = os.path.join(figure_dir, f"E_curve2_{idx+1}.png")
-    plt.savefig(output_filename)
-    plt.close()  # 关闭当前图形，避免重叠
+        if block2:
+            axes[1].plot(x_t, y_t, label="x(t), y(t) curve", color='red', linestyle='--')
 
-    print(f"Plot for data block {idx+1} saved as {output_filename}")
+        if block3:
+            axes[2].plot(x_t, y_t, label="x(t), y(t) curve", color='red', linestyle='--')
 
+        # 设置每个子图的标题和标签
+        axes[0].set_title(f"compare 3 types of splines({10*4**((i+1)//12)}) - Bspline")
+        axes[0].set_xlabel('X')
+        axes[0].set_ylabel('Y')
+        axes[0].legend(loc='best')
 
+        if block2:
+            axes[1].set_title(f"compare 3 types of splines({10*4**((i+1)//12)}) - ppForm")
+            axes[1].set_xlabel('X')
+            axes[1].set_ylabel('Y')
+            axes[1].legend(loc='best')
 
-# 读取文件，解析每个 JSON 数据块
-filename = 'E_curve_r1.txt'
-with open(filename, 'r') as file:  
-    # 文件中多个 JSON 数据块用换行分隔
-    blocks = file.read().strip().split("\n}\n{")
-    json_blocks = []
-    for block in blocks:
-        # 修复分隔导致的 JSON 格式问题
-        if not block.startswith("{"):
-            block = "{" + block
-        if not block.endswith("}"):
-            block = block + "}"
-        json_blocks.append(json.loads(block))
+        if block3:
+            axes[2].set_title(f"compare 3 types of splines({10*4**((i+1)//12)}) - ppForm")
+            axes[2].set_xlabel('X')
+            axes[2].set_ylabel('Y')
+            axes[2].legend(loc='best')
 
-# 定位到项目根目录并确保 'figure' 文件夹存在
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # 定位到项目根目录
-figure_dir = os.path.join(project_root, "figure")  # figure 文件夹路径
+        # 自动调整布局避免重叠
+        plt.tight_layout()
 
-if not os.path.exists(figure_dir):
-    os.makedirs(figure_dir)
+        # 保存当前图形为 PNG 文件
+        output_filename = os.path.join(figure_dir, f"{filename}_{(i+1)//3+1}.png")
+        plt.savefig(output_filename)
+        plt.close()  # 关闭当前图形
 
-# 逐个解析 JSON 数据块并绘制图像
-for idx, data in enumerate(json_blocks):
-    # 提取 knots（节点）和 polynomials（多项式系数）
-    knots = data["knots"]
-    polynomials = data["polynomials"]
+        print(f"Saved: {output_filename}")
 
-    # 创建一个图形
-    plt.figure(figsize=(8, 6))
+# 主函数
+def main():
+    filename = 'E_curve2.json'  # 你的 JSON 文件路径
+    data = load_json(filename)
+    plot_data(data, filename)
 
-    # 生成全局 s 值并计算 x(s) 和 y(s) 的值
-    s2_values = np.linspace(0, 6 * np.pi, 1000)
-    x2_values_func = x2_func(s_values)
-    y2_values_func = y2_func(s_values)
+    filename1 = 'E_curve1.json'  # 你的 JSON 文件路径
+    data = load_json(filename1)
+    plot_data(data, filename1)
 
-    # 绘制真实的 x(s) 和 y(s) 函数曲线
-    plt.plot(x2_values_func, y2_values_func, label="True Curve (x(s), y(s))", color='black', linewidth=0.5)
-
-    # 逐个多项式，计算并绘制每个区间的 (x(t), y(t)) 曲线
-    for i in range(0, len(polynomials), 2):  # 每两个多项式为一组
-        # 获取当前组的两个多项式系数
-        x_coeffs = polynomials[i]["coefficients"]
-        y_coeffs = polynomials[i+1]["coefficients"]
-
-        # 获取当前区间的起始和结束节点
-        x_start = knots[i//2]
-        x_end = knots[i//2 + 1]
-
-        # 生成当前区间内的 t 值
-        t_values = np.linspace(x_start, x_end, 100)
-
-        # 计算当前区间内的 x(t) 和 y(t) 值
-        x_values_poly = np.array([poly(t, x_coeffs) for t in t_values])
-        y_values_poly = np.array([poly(t, y_coeffs) for t in t_values])
-
-        # 绘制当前区间的 (x(t), y(t)) 曲线
-        plt.plot(x_values_poly, y_values_poly, label=f"Poly Group {i//2 + 1} (x(t), y(t))", linestyle='-', linewidth=1)
-
-    # 设置图形标题和标签
-    plt.title(f"Polynomials and True Curve (Data Block {idx+1})")
-    plt.xlabel("x")
-    plt.ylabel("y")
-    plt.grid(True)
-    # 保存当前图形到 'figure' 文件夹
-    output_filename = os.path.join(figure_dir, f"E_heart_{idx+1}.png")
-    plt.savefig(output_filename)
-    plt.close()  # 关闭当前图形，避免重叠
-
-    print(f"Plot for data block {idx+1} saved as {output_filename}")
+if __name__ == '__main__':
+    main()

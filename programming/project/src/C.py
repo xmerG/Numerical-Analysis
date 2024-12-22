@@ -21,9 +21,19 @@ boundary_types = {
     5: "not_a_knot"  # not_a_knot boundary
 }
 
+# 边界条件对应的颜色映射
+boundary_colors = {
+    0: 'blue',     # linear
+    1: 'green',    # periodic
+    2: 'red',      # complete
+    3: 'purple',   # specified
+    4: 'orange',   # natural
+    5: 'brown'     # not_a_knot
+}
+
 # 读取文件，解析每个 JSON 数据块
 filename = 'output_C.txt'
-with open(filename, 'r') as file:  
+with open(filename, 'r') as file:
     # 文件中多个 JSON 数据块用换行分隔
     blocks = file.read().strip().split("\n}\n{")
     json_blocks = []
@@ -42,53 +52,60 @@ figure_dir = os.path.join(project_root, "figure")  # figure 文件夹路径
 if not os.path.exists(figure_dir):
     os.makedirs(figure_dir)
 
-# 逐个解析 JSON 数据块并绘制图像
-for idx, data in enumerate(json_blocks):
-    # 提取 boundary_condition, knots（节点）和 polynomials（多项式系数）
-    boundary_condition = data.get("boundary_condition", 0)  # 默认是 0，即 "non"
-    knots = data["knots"]
-    polynomials = data["polynomials"]
+# 逐6组数据绘制图像
+for group_idx in range(0, len(json_blocks), 6):
+    fig, ax = plt.subplots(figsize=(10, 8))  # 创建一个大的画布
 
-    # 根据 boundary_condition 获取边界类型名称
-    boundary_type = boundary_types.get(boundary_condition, "non")
+    # 获取当前组的数据
+    group_data = json_blocks[group_idx: group_idx + 6]
 
-    # 生成全局 x 值和 f(x) 的值
+    # 绘制 1/(1 + x^2) 的曲线，使用黑色
     x_values = np.linspace(-5, 5, 1000)
     y_f_values = f(x_values)
+    ax.plot(x_values, y_f_values, label=r"$f(x) = \frac{1}{1 + x^2}$", color='black', linestyle='--', linewidth=0.5)
 
-    # 创建一个图形
-    plt.figure(figsize=(8, 6))
+    # 遍历当前组的每个数据块
+    for idx, data in enumerate(group_data):
+        # 提取 boundary_condition, knots（节点）和 polynomials（多项式系数）
+        boundary_condition = data.get("boundary_condition", 0)  # 默认是 0，即 "non"
+        knots = data["knots"]
+        polynomials = data["polynomials"]
 
-    # 绘制 1/(1 +x^2) 的曲线
-    plt.plot(x_values, y_f_values, label=r"$f(x) = \frac{1}{1 + x^2}$", color='blue', linestyle='--')
+        # 根据 boundary_condition 获取边界类型名称
+        boundary_type = boundary_types.get(boundary_condition, "non")
 
-    # 绘制每个多项式的曲线，仅在对应区间内
-    for i, polynomial in enumerate(polynomials):
-        # 获取当前多项式的系数
-        coefficients = polynomial["coefficients"]
+        # 根据 boundary_condition 获取边界条件对应的颜色
+        color = boundary_colors.get(boundary_condition, 'red')  
 
-        # 获取当前区间的起始和结束节点
-        x_start = knots[i]
-        x_end = knots[i + 1]
+        # 绘制每个多项式的曲线，仅在对应区间内
+        for i, polynomial in enumerate(polynomials):
+            # 获取当前多项式的系数
+            coefficients = polynomial["coefficients"]
 
-        # 生成当前区间内的 x 值
-        x_interval = np.linspace(x_start, x_end, 100)
+            # 获取当前区间的起始和结束节点
+            x_start = knots[i]
+            x_end = knots[i + 1]
 
-        # 计算当前多项式的 y 值
-        y_poly_values = np.array([poly(x, coefficients) for x in x_interval])
+            # 生成当前区间内的 x 值
+            x_interval = np.linspace(x_start, x_end, 100)
 
-        # 绘制当前多项式曲线
-        plt.plot(x_interval, y_poly_values, label=f"Polynomial {i+1}", linestyle='-', linewidth=1)
+            # 计算当前多项式的 y 值
+            y_poly_values = np.array([poly(x, coefficients) for x in x_interval])
 
-    # 设置图形标题和标签
-    plt.title(f"Bspline(starts from {-6.0+0.5*(idx//5)}) - Boundary Type: {boundary_type}")
+            # 仅第一次绘制该边界条件时显示图例
+            label = f"{boundary_type}" if i == 0 else None
+            ax.plot(x_interval, y_poly_values, label=label, linestyle='-', color=color, linewidth=0.8)
+
+    # 添加图例，网格和标签
+    plt.legend(loc='best', fontsize=10)
+    plt.grid(True)
     plt.xlabel("x")
     plt.ylabel("y")
-    plt.grid(True)
+    plt.title(f"Bsplines (srating from {-6+0.5*(group_idx//6)}))")
 
-    # 保存当前图形到 'figure' 文件夹，文件名中加入边界类型
-    output_filename = os.path.join(figure_dir, f"C_{idx+1}.png")
+    # 保存当前图形
+    output_filename = os.path.join(figure_dir, f"C_{group_idx // 6 + 1}.png")
     plt.savefig(output_filename)
-    plt.close()  # 关闭当前图形，避免重叠
+    plt.close()  # 关闭当前图形
 
-    print(f"Plot for data {idx+1} with boundary type '{boundary_type}' saved as {output_filename}")
+print(f"All plots saved in the 'figure' folder.")

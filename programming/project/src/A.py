@@ -42,60 +42,70 @@ figure_dir = os.path.join(project_root, "figure")  # figure 文件夹路径
 if not os.path.exists(figure_dir):
     os.makedirs(figure_dir)
 
-# 逐个解析 JSON 数据块并绘制图像
-for idx, data in enumerate(json_blocks):
-    # 提取 knots（节点）和 polynomials（多项式系数）
-    knots = data["knots"]
-    polynomials = data["polynomials"]
-    
-    # 提取边界条件类型
-    boundary_conditions = data.get("boundary_conditions", None)
-    
-    if boundary_conditions is not None:
-        boundary_type = boundary_conditions  # 如果边界条件是整数类型
-    else:
-        boundary_type = 0  # 默认类型为 "No Boundary"
+# 定义颜色列表
+colors = ['red', 'green', 'blue', 'yellow', 'orange', 'pink', 'cyan', 'brown']
 
-    # 获取实际边界条件名称
-    boundary_condition_name = boundary_type_mapping.get(boundary_type, "Unknown Boundary")
+
+# 按每6组数据画一张图
+for idx in range(0, len(json_blocks), 6):
+    # 创建一个图形
+    plt.figure(figsize=(8, 6))
 
     # 生成全局 x 值和 f(x) 的值
     x_values = np.linspace(-1, 1, 1000)
     y_f_values = f(x_values)
 
-    # 创建一个图形
-    plt.figure(figsize=(8, 6))
-
     # 绘制 1/(1 + 25x^2) 的曲线
-    plt.plot(x_values, y_f_values, label=r"$f(x) = \frac{1}{1 + 25x^2}$", color='blue', linestyle='--')
+    plt.plot(x_values, y_f_values, label=r"$f(x) = \frac{1}{1 + 25x^2}$", color='black', linestyle='--')
 
-    # 绘制每个多项式的曲线，仅在对应区间内
-    for i, polynomial in enumerate(polynomials):
-        # 获取当前多项式的系数
-        coefficients = polynomial["coefficients"]
+    # 处理当前组的6个数据块
+    for i, data in enumerate(json_blocks[idx:idx+6]):
+        # 提取 knots（节点）和 polynomials（多项式系数）
+        knots = data["knots"]
+        polynomials = data["polynomials"]
+        
+        # 提取边界条件类型
+        boundary_conditions = data.get("boundary_conditions", None)
+        boundary_type = boundary_conditions if boundary_conditions is not None else 0  # 默认类型为 "No Boundary"
+        
+        # 获取实际边界条件名称
+        boundary_condition_name = boundary_type_mapping.get(boundary_type, "Unknown Boundary")
+        
+        # 获取当前的颜色
+        color = colors[i % len(colors)]
+        
+        # 绘制每个多项式的曲线，仅在对应区间内
+        for j, polynomial in enumerate(polynomials):
+            # 获取当前多项式的系数
+            coefficients = polynomial["coefficients"]
 
-        # 获取当前区间的起始和结束节点
-        x_start = knots[i]
-        x_end = knots[i + 1]
+            # 获取当前区间的起始和结束节点
+            x_start = knots[j]
+            x_end = knots[j + 1]
 
-        # 生成当前区间内的 x 值
-        x_interval = np.linspace(x_start, x_end, 100)
+            # 生成当前区间内的 x 值
+            x_interval = np.linspace(x_start, x_end, 100)
 
-        # 计算当前多项式的 y 值
-        y_poly_values = np.array([poly(x, coefficients) for x in x_interval])
+            # 计算当前多项式的 y 值
+            y_poly_values = np.array([poly(x, coefficients) for x in x_interval])
 
-        # 绘制当前多项式曲线
-        plt.plot(x_interval, y_poly_values, label=f"Polynomial {i+1}", linestyle='-', linewidth=1)
+            label = f"{boundary_condition_name}" if j == 0 else None
+
+            # 绘制当前多项式曲线
+            plt.plot(x_interval, y_poly_values, label=label, color=color,linewidth=0.5)
 
     # 设置图形标题和标签
-    plt.title(f"pp-Form ({5*2**(idx//6)} knots) - {boundary_condition_name}")
+    plt.title(f"pp-Form - Knots {5*2**(idx//6 +1)}")
     plt.xlabel("x")
     plt.ylabel("y")
     plt.grid(True)
 
-    # 保存当前图形到 'figure' 文件夹，文件名包含边界条件
-    output_filename = os.path.join(figure_dir, f"A_{idx+1}.png")
+    # 设置图例并调整字体大小
+    plt.legend(loc='best', fontsize=10)  # 修改字体大小
+
+    # 保存当前图形到 'figure' 文件夹，文件名根据起始索引命名
+    output_filename = os.path.join(figure_dir, f"A_{idx//6 + 1}.png")
     plt.savefig(output_filename)
     plt.close()  # 关闭当前图形，避免重叠
 
-    print(f"Plot for data block {idx+1} saved as {output_filename}")
+    print(f"A_{(idx+1)//6+1} saved as {output_filename}")

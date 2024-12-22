@@ -41,57 +41,16 @@ vector<double> getknots(const vector<vector<double>> &points) {
 }
 
 
-class Curve_Fit{
+
+class plane_curve_fit{
 protected:
     vector<double> knots; //knots
-    vector<Polynomial> pols;  //polynomials x_1(t), y_1(t), x_2(t), y_2(t)...
-
-public:
-    Curve_Fit(){}
-    Curve_Fit(vector<double> &_knots):knots{_knots}{}
-    void print(const string& filename) {
-        nlohmann::json j;
-
-        j["knots"] = knots;
-        vector<nlohmann::json> polynomials;
-        for (const auto& poly : pols) {
-            nlohmann::json poly_json;
-            poly_json["coefficients"] = poly.getcoefficents();  
-            polynomials.push_back(poly_json);
-        }
-        j["polynomials"] = polynomials;
-    
-        std::ifstream file_check(filename);  
-        bool is_empty = file_check.peek() == std::ifstream::traits_type::eof(); 
-        file_check.close(); 
-        std::ofstream file(filename, std::ios::app);  // 打开文件进行追加
-        if (file.is_open()) {
-            // 如果文件非空，则添加分隔符（换行符）
-            if (!is_empty) {
-                file << "\n";  // 可以根据需要使用其他分隔符
-            }
-            file << j.dump(4);  
-            file.close();
-            cout << "Output appended to " << filename << endl;
-        } 
-        else {
-            cerr << "Error opening file " << filename << endl;
-        }
-    }
-};
-
-class plane_curve_fit:public Curve_Fit{
-protected:
+    boundaryType btype;
+    knotsType ktype;
     vector<double> x_vals;
     vector<double> y_vals;
     vector<Polynomial> polsX;
     vector<Polynomial> polsY;
-    void convert(){
-        for(int i=0; i<polsX.size(); ++i){
-            pols.push_back(polsX[i]);
-            pols.push_back(polsY[i]);
-        }
-    }
 
     vector<double> get_t(const int &N, const double &a, const double &b){
         vector<double> t(N+1);
@@ -132,31 +91,76 @@ protected:
         vector<vector<double>> points=getpoints(x_vals,y_vals);
         knots=getknots(points);
     }
-    public:
-        plane_curve_fit(){}
-        /*plane_curve_fit(const int &n, const double &a, const double &b, const Function &f1, 
-                        const Function &f2,const knotsType &t=knotsType::cumulate_chordal){
-            if(t==knotsType::cumulate_chordal){
-                setknots(n,a,b,f1,f2);
-            }
-            else{
-                uniknots(n,a,b,f1,f2);
-            }
-        }
-        void cubic_pp_fit(const Function &f1, const Function &f2,
-                        const boundaryType &btype=boundaryType::periodic){
-            cubic_ppForm s(knots,f1,btype);
-            cubic_ppForm
 
-            
-        }*/
+    void clear(){
+        x_vals.clear();
+        x_vals.shrink_to_fit();
+        y_vals.clear();
+        y_vals.shrink_to_fit();
+    }
+    
+public:
+    plane_curve_fit(){}
+    plane_curve_fit(const boundaryType &btype, const knotsType &ktype):btype{btype},ktype{ktype}{}
+    void print(const string &filename) {
+        ifstream inFile(filename);
+        json jsonDataArray;
+        // 如果文件存在且不为空，读取文件中的 JSON 数据
+        if (inFile.is_open() && inFile.peek() != std::ifstream::traits_type::eof()) {
+            inFile >> jsonDataArray;
+            inFile.close();  // 读取完成后关闭输入文件
+        } else {
+            inFile.close();  // 如果文件为空或读取失败，关闭文件
+        }
+
+        // 如果文件为空或者没有读取到有效数据，初始化一个空的 JSON 数组
+        if (jsonDataArray.is_null()) {
+            jsonDataArray = json::array();
+        }
+
+        // 创建当前数据块
+        json jsonData;
+        jsonData["boundaryType"] = btype;
+        jsonData["knotsType"] = ktype;
+        json points;
+
+        // 遍历 knots 和 polsX, polsY，生成数据点
+        int n=knots.size();
+        for (int i = 0; i < n- 1; ++i) {
+            double l = knots[i + 1] - knots[i];
+            for (double j = knots[i]; j <knots[i + 1]; j += l*0.015) {
+                json point = { polsX[i](j), polsY[i](j) };  // 每个点是一个二维数组
+                points.push_back(point);  // 将点添加到 "points" 数组中
+            }
+            json point={polsX[n-2](knots[n-1]), polsY[n-2](knots[n-1])};
+            points.push_back(point);
+        }
+        jsonData["points"] = points;
+
+        // 将新的数据块添加到 JSON 数组中
+        jsonDataArray.push_back(jsonData);
+
+        // 以追加模式打开文件
+        ofstream outFile(filename, ios::out);
+        if (outFile.is_open()) {
+            outFile << jsonDataArray.dump(4) << endl;  // 格式化输出 (缩进4个空格)
+            outFile.close();  // 保存并关闭文件
+        } else {
+            cout << "Failed to open file for writing" << endl;
+        }
+    }
 };
 
 class spherefit:public plane_curve_fit{
 private:
     vector<vector<double>> points;
+    void clear(){
+        points.clear();
+        points.shrink_to_fit();
+    }
 public:
-    spherefit(const int &n, const double &a, const double &b, const Function &f1, const Function &f2, const knotsType &ktype){
+    spherefit(const int &n, const double &a, const double &b, const Function &f1, const Function &f2, const knotsType &_ktype){
+        ktype=_ktype;
         if(ktype==knotsType::cumulate_chordal){
             setknots(n,a,b,f1,f2);
         }
@@ -164,13 +168,15 @@ public:
             uniknots(n,a,b,f1,f2);
         }
     }
-    void cubic_ppFit(const boundaryType &btype){
+    void cubic_ppFit(const boundaryType &_btype){
+        btype=_btype;
         cubic_ppForm Sx(knots,x_vals);
         cubic_ppForm Sy(knots, y_vals);
         vector<Polynomial> p_x=Sx.returnPols();
         vector<Polynomial> p_y=Sy.returnPols();
         for(int i=0; i<p_x.size(); ++i){
-            for(double j=knots[i];j<knots[i+1];j+=0.001){
+            double a=knots[i+1]-knots[i];
+            for(double j=knots[i];j<knots[i+1];j+=a*0.016){
                 double a=p_x[i](j);
                 double b=p_y[i](j);
                 double c=pow(a,2)+pow(b,2);
@@ -179,31 +185,65 @@ public:
             }
         }
     }
-    void print(const std::string& filename) {
-        // Open the file
-        std::ofstream file(filename);
-        if (file.is_open()) {
-            // Write header if needed (optional)
-            file << "x,y,z\n";
-            
-            // Write points to the file
-            for (const auto& point : points) {
-                file << point[0] << "," << point[1] << "," << point[2] << "\n";
-            }
-            file.close();
-            std::cout << "Data successfully written to " << filename << std::endl;
+    void print(const string &filename) {
+        ifstream inFile(filename);
+        json jsonDataArray;
+
+        // 如果文件存在且不为空，读取文件中的 JSON 数据
+        if (inFile.is_open() && inFile.peek() != std::ifstream::traits_type::eof()) {
+            inFile >> jsonDataArray;
+            inFile.close();  // 读取完成后关闭输入文件
         } else {
-            std::cerr << "Failed to open file " << filename << std::endl;
+            inFile.close();  // 如果文件为空或读取失败，关闭文件
         }
+
+    // 如果文件为空或者没有读取到有效数据，初始化一个空的 JSON 数组
+        if (jsonDataArray.is_null()) {
+            jsonDataArray = json::array();
+        }
+
+        // 创建当前数据块
+        json jsonData;
+        jsonData["boundaryType"] = btype;  
+        jsonData["knotsType"] = ktype; 
+    
+        // 创建一个 JSON 数组来存储 points
+        json pointsArray;
+
+        for (const auto& point : points) {
+            json pointJson;
+            pointJson = {point[0], point[1], point[2]};
+            pointsArray.push_back(pointJson);
+        }
+
+        // 将 points 数组添加到 jsonData 中
+        jsonData["points"] = pointsArray;
+
+        // 将新的数据块添加到 JSON 数组中
+        jsonDataArray.push_back(jsonData);
+
+        // 以追加模式打开文件
+        ofstream outFile(filename, ios::out | ios::trunc);  // 使用 trunc 覆盖写入文件
+        if (outFile.is_open()) {
+            outFile << jsonDataArray.dump(4) << endl;  // 格式化输出 (缩进4个空格)
+            outFile.close();  // 保存并关闭文件
+        } else {
+            cout << "Failed to open file for writing" << endl;
+        }
+        clear();
     }
+
+
 };
 
 class cubic_bspline_fit:public plane_curve_fit{
 public:
     cubic_bspline_fit(){}
     cubic_bspline_fit(const int &n, const double &a, const double &b, 
-                    const Function &f1, const Function &f2, const boundaryType &btype=boundaryType::natural,
+                    const Function &f1, const Function &f2, const boundaryType &_btype=boundaryType::natural,
                     const knotsType &t=knotsType::cumulate_chordal){
+        btype=_btype;
+        ktype=t;
         if(t==knotsType::uniform){
             uniknots(n, a, b, f1, f2);
         }
@@ -225,23 +265,22 @@ public:
         BSpline<3> b_y(knots, y_vals, btype);
         polsX=b_x.returnPols();
         polsY=b_y.returnPols();
-        convert();
         for(int i=0; i<3; ++i){
             knots.erase(knots.begin());
             knots.pop_back();
         }
+        clear();
     } 
-    vector<Polynomial> getpol(){
-        return pols;
-    }
 };
 
 
 class cubic_ppform_fit:public plane_curve_fit{
 public:
     cubic_ppform_fit(const int &n, const double &a, const double &b, const Function &f1, const Function &f2,
-                        const boundaryType &btype=boundaryType::natural,
+                        const boundaryType &_btype=boundaryType::natural,
                         const knotsType &t=knotsType::cumulate_chordal){
+        ktype=t;
+        btype=_btype;
         if(t==knotsType::uniform){
             uniknots(n,a,b,f1,f2);
         }
@@ -252,67 +291,8 @@ public:
         cubic_ppForm b_y(knots, y_vals, btype);
         polsX=b_x.returnPols();
         polsY=b_y.returnPols();
-        convert();
-    }
-    vector<Polynomial> getpol(){
-        return pols;
+        clear();
     }
 };
 
 
-//----------------------------------------------------------
-/*
-class sphereFit{
-private:
-    vector<vector<double>> points;
-    vector<double> knots;
-    vector<double> x_val;
-    vector<double> y_val;
-public:
-    sphereFit(const int &N, const double &a, const double &b, const Function &f1, const Function &f2){
-        vector<double> t=get_t(N,a,b);
-        x_val=getvals(t, f1);
-        y_val=getvals(t, f2);
-        vector<vector<double>> points=getpoints(x_val,y_val);
-        knots=getknots(points);
-    }
-    void cubic_ppfit(const boundaryType &btype=boundaryType::periodic){
-        cubic_ppForm p1(knots,x_val,btype);
-        vector<Polynomial> p_x=p1.returnPols();
-        cubic_ppForm p2(knots,y_val,btype);
-        vector<Polynomial> p_y=p2.returnPols();
-        for(int i=0; i<p_x.size(); ++i){
-            for(double j=knots[i];j<knots[i+1];j+=0.001){
-                double a=p_x[i](j);
-                double b=p_y[i](j);
-                double c=pow(a,2)+pow(b,2);
-                vector<double> p{2.0*a/(1+c), 2.0*b/(1+c), (1-c)/(1+c)};
-                points.push_back(p);    
-            }
-        }
-    }
-    void print(const string& filename) {
-        json j = points;  
-
-        ifstream file_check(filename); 
-        bool is_empty = file_check.peek() == std::ifstream::traits_type::eof();  // 判断文件是否为空
-        file_check.close();  // 关闭检查用的文件流
-
-        // 打开文件并以追加模式写入 JSON 数据
-        std::ofstream file(filename, std::ios::app);  // 打开文件进行追加
-        if (file.is_open()) {
-            // 如果文件非空，则添加分隔符（换行符）
-            if (!is_empty) {
-                file << "\n";  // 你可以根据需要使用其他分隔符
-            }
-
-            // 将 JSON 数据写入文件，并格式化输出
-            file << j.dump(4);  // 4 个空格缩进
-            file.close();
-            cout << "Output appended to " << filename << endl;
-        } 
-        else {
-            cerr << "Error opening file " << filename << endl;
-        }
-    }
-};*/

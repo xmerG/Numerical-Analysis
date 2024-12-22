@@ -71,6 +71,7 @@ void cubic_test(const vector<double> &v){
     Error(b2, f);
     Error(b3, f);
     Error(b4, f);
+    Error(b5, f);
 }
 
 void test(const double &a, const int &b){

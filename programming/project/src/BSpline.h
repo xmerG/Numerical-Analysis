@@ -370,6 +370,7 @@ public:
             b=coef;
             bases=base;
         }
+        n=knots.size()-degree-1;
     }
 
     //calculate the value of arbitrary BSpline if we already know the expression
