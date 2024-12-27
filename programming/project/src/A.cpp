@@ -3,6 +3,7 @@
 #include"Function.hpp"
 #include"ppForm.hpp"
 #include <nlohmann/json.hpp>
+#include <algorithm>
 
 using namespace std;
 using json = nlohmann::json;
@@ -25,7 +26,7 @@ private:
 public:
     knots(const int &n, const double &a, const double&b):n{n}, a{a}, b{b}{}
     vector<double> getknots(){
-        for(int i=0; i<n+1; ++i){
+        for(int i=0; i<n; ++i){
             knot.push_back(a+(b-a)*i/n);
         }
     return knot;
@@ -44,6 +45,15 @@ void error(const ppForm &s, const Function &f, vector<double> &mid){
     for(int i=0; i<mid.size(); ++i){
         e.push_back(s.calculate(mid[i])-f(mid[i]));
     }
+
+    auto max_it = std::max_element(e.begin(), e.end());
+
+    if (max_it != e.end()) {
+        cout << "The maximum error is: " << *max_it << endl;
+    } else {
+        cout << "The vector e is empty!" << endl;
+    }
+
     json error_data;
     error_data["mid"] = mid;
     error_data["error"] = e;
@@ -105,6 +115,7 @@ void test(const int &n){
 }
 
 int main(){
+    cout<<"----------------------------results for A------------------------------------"<<endl;
     test(6);
     test(11);
     test(21);

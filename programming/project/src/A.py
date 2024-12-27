@@ -34,7 +34,7 @@ if not os.path.exists(figure_dir):
     os.makedirs(figure_dir)
 
 # 定义颜色列表
-colors = ['red', 'green', 'blue', 'yellow', 'orange', 'pink', 'cyan', 'brown']
+colors = ['red', 'green', 'blue', 'orange', 'pink', 'cyan', 'brown']
 
 # 按每6组数据画一张图
 for idx in range(0, len(data), 6):
@@ -85,7 +85,7 @@ for idx in range(0, len(data), 6):
             plt.plot(x_interval, y_poly_values, label=label, color=color, linewidth=0.5)
 
     # 设置图形标题和标签
-    plt.title(f"pp-Form - Knots {5*2**(idx//6 +1)}")
+    plt.title(f"pp-Form - Knots {5*2**(idx//6)+1}")
     plt.xlabel("x")
     plt.ylabel("y")
     plt.grid(True)
@@ -112,7 +112,7 @@ if not os.path.exists(figure_dir):
     os.makedirs(figure_dir)
 
 # 定义颜色列表
-colors = ['blue', 'green', 'red', 'purple', 'orange', 'brown', 'pink', 'cyan', 'yellow', 'black']
+colors = ['blue', 'green', 'red', 'purple', 'orange', 'brown', 'pink', 'cyan', 'black']
 
 # 逐6组数据绘制图像
 for group_idx in range(0, len(data), 6):
@@ -136,7 +136,7 @@ for group_idx in range(0, len(data), 6):
         plt.plot(mid, error, label=f"{boundary_label}", marker='o', linestyle='-', color=color)
 
     # 添加标题和标签
-    plt.title(f"Error on Midpoints of subintervals for knots {10*2**(group_idx//6)}")
+    plt.title(f"Error on Midpoints of subintervals for knots {5*2**(group_idx//6)+1}")
     plt.xlabel("Mid")
     plt.ylabel("Error")
     plt.grid(True)

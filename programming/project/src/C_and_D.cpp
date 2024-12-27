@@ -83,6 +83,7 @@ void test(const double &a, const int &b){
 }
 
 int main(){
+    cout<<"-----------------------result for C and D---------------------------------"<<endl;
     test(-6.0,11);
     test(-5.5, 10);
     return 0;
