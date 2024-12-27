@@ -31,19 +31,11 @@ boundary_colors = {
     5: 'brown'     # not_a_knot
 }
 
-# 读取文件，解析每个 JSON 数据块
-filename = 'output_C.txt'
+# 读取文件，解析 JSON 数据块
+filename = 'output_C.json'
 with open(filename, 'r') as file:
-    # 文件中多个 JSON 数据块用换行分隔
-    blocks = file.read().strip().split("\n}\n{")
-    json_blocks = []
-    for block in blocks:
-        # 修复分隔导致的 JSON 格式问题
-        if not block.startswith("{"):
-            block = "{" + block
-        if not block.endswith("}"):
-            block = block + "}"
-        json_blocks.append(json.loads(block))
+    # 读取 JSON 数据块
+    json_data = json.load(file)
 
 # 定位到项目根目录并确保 'figure' 文件夹存在
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # 定位到项目根目录
@@ -53,11 +45,11 @@ if not os.path.exists(figure_dir):
     os.makedirs(figure_dir)
 
 # 逐6组数据绘制图像
-for group_idx in range(0, len(json_blocks), 6):
+for group_idx in range(0, len(json_data), 6):
     fig, ax = plt.subplots(figsize=(10, 8))  # 创建一个大的画布
 
     # 获取当前组的数据
-    group_data = json_blocks[group_idx: group_idx + 6]
+    group_data = json_data[group_idx: group_idx + 6]
 
     # 绘制 1/(1 + x^2) 的曲线，使用黑色
     x_values = np.linspace(-5, 5, 1000)
@@ -101,7 +93,7 @@ for group_idx in range(0, len(json_blocks), 6):
     plt.grid(True)
     plt.xlabel("x")
     plt.ylabel("y")
-    plt.title(f"Bsplines (srating from {-6+0.5*(group_idx//6)}))")
+    plt.title(f"Bsplines (starting from {-6 + 0.5 * (group_idx // 6)})")
 
     # 保存当前图形
     output_filename = os.path.join(figure_dir, f"C_{group_idx // 6 + 1}.png")

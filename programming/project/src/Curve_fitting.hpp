@@ -128,13 +128,13 @@ public:
         int n=knots.size();
         for (int i = 0; i < n- 1; ++i) {
             double l = knots[i + 1] - knots[i];
-            for (double j = knots[i]; j <knots[i + 1]; j += l*0.015) {
+            for (double j = knots[i]; j <knots[i + 1]; j += l*0.0125) {
                 json point = { polsX[i](j), polsY[i](j) };  // 每个点是一个二维数组
                 points.push_back(point);  // 将点添加到 "points" 数组中
             }
-            json point={polsX[n-2](knots[n-1]), polsY[n-2](knots[n-1])};
-            points.push_back(point);
         }
+        json point={polsX[n-2](knots[n-1]), polsY[n-2](knots[n-1])};
+        points.push_back(point);
         jsonData["points"] = points;
 
         // 将新的数据块添加到 JSON 数组中

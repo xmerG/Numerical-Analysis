@@ -41,7 +41,7 @@ void Error(BSpline<d> &b, const Function &f){
 void linear_test(const vector<double> &v){
     Runge f;
     BSpline<1> b(v,f);
-    b.print("output_C.txt");
+    b.print("output_C.json");
     Error(b, f);
 }
 
@@ -52,20 +52,20 @@ void cubic_test(const vector<double> &v){
     Runge f;
     BSpline<3> b1(v,f,boundaryType::natural);
     vector<double> error;
-    b1.print("output_C.txt");
+    b1.print("output_C.json");
 
 
     BSpline<3> b2(v,f,boundaryType::complete);
-    b2.print("output_C.txt");
+    b2.print("output_C.json");
 
     BSpline<3> b3(v,f,boundaryType::periodic);
-    b3.print("output_C.txt");
+    b3.print("output_C.json");
 
     BSpline<3> b4(v,f,boundaryType::specified);
-    b4.print("output_C.txt");
+    b4.print("output_C.json");
 
     BSpline<3> b5(v,f,boundaryType::not_a_knot);
-    b5.print("output_C.txt");
+    b5.print("output_C.json");
     
     Error(b1, f);
     Error(b2, f);

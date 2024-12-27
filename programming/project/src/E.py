@@ -2,6 +2,7 @@ import json
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+import pandas as pd
 
 # boundaryType 枚举映射
 boundaryType_dict = {
@@ -26,7 +27,7 @@ def load_json(filename):
 
 # 绘制图形并保存为文件
 def plot_data(data, filename, figure_dir='figures'):
-# 定位到项目根目录并确保 'figure' 文件夹存在
+    # 定位到项目根目录并确保 'figure' 文件夹存在
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # 定位到项目根目录
     figure_dir = os.path.join(project_root, "figure")  # figure 文件夹路径
 
@@ -58,39 +59,42 @@ def plot_data(data, filename, figure_dir='figures'):
         boundary1 = boundaryType_dict.get(block1['boundaryType'], 'unknown')
         knots1 = knotsType_dict.get(block1['knotsType'], 'unknown')
 
-        # 提取并绘制第一个数据块
-        x_values1 = [point[0] for point in block1['points']]
-        y_values1 = [point[1] for point in block1['points']]
-        axes[0].plot(x_values1, y_values1, label=f"boundaryType: {boundary1}, knotsType: {knots1}", color='blue')
+        # 使用 pandas DataFrame 来存储点
+        points1 = pd.DataFrame(block1['points'], columns=['X', 'Y'])
+
+        # 绘制折线图
+        axes[0].plot(points1['X'], points1['Y'], label=f"boundaryType: {boundary1}, knotsType: {knots1}", color='blue', linewidth=0.8)
 
         # 如果有第二个数据块，将 boundaryType 和 knotsType 转换为字符串
         if block2:
             boundary2 = boundaryType_dict.get(block2['boundaryType'], 'unknown')
             knots2 = knotsType_dict.get(block2['knotsType'], 'unknown')
 
-            # 提取并绘制第二个数据块
-            x_values2 = [point[0] for point in block2['points']]
-            y_values2 = [point[1] for point in block2['points']]
-            axes[1].plot(x_values2, y_values2, label=f"boundaryType: {boundary2}, knotsType: {knots2}", color='green')
+            # 使用 pandas DataFrame 来存储点
+            points2 = pd.DataFrame(block2['points'], columns=['X', 'Y'])
+
+            # 绘制第二个数据块的折线图
+            axes[1].plot(points2['X'], points2['Y'], label=f"boundaryType: {boundary2}, knotsType: {knots2}", color='green', linewidth=0.8)
 
         # 如果有第三个数据块，将 boundaryType 和 knotsType 转换为字符串
         if block3:
             boundary3 = boundaryType_dict.get(block3['boundaryType'], 'unknown')
             knots3 = knotsType_dict.get(block3['knotsType'], 'unknown')
 
-            # 提取并绘制第三个数据块
-            x_values3 = [point[0] for point in block3['points']]
-            y_values3 = [point[1] for point in block3['points']]
-            axes[2].plot(x_values3, y_values3, label=f"boundaryType: {boundary3}, knotsType: {knots3}", color='orange')
+            # 使用 pandas DataFrame 来存储点
+            points3 = pd.DataFrame(block3['points'], columns=['X', 'Y'])
 
-        # 在每个子图上绘制额外的曲线
-        axes[0].plot(x_t, y_t, label="x(t), y(t) curve", color='red', linestyle='--')
+            # 绘制第三个数据块的折线图
+            axes[2].plot(points3['X'], points3['Y'], label=f"boundaryType: {boundary3}, knotsType: {knots3}", color='orange', linewidth=0.8)
+
+        # 在每个子图上绘制额外的曲线，设置 linewidth=0.5 使曲线变细
+        axes[0].plot(x_t, y_t, label="x(t), y(t) curve", color='red', linestyle='--', linewidth=0.5)
 
         if block2:
-            axes[1].plot(x_t, y_t, label="x(t), y(t) curve", color='red', linestyle='--')
+            axes[1].plot(x_t, y_t, label="x(t), y(t) curve", color='red', linestyle='--', linewidth=0.5)
 
         if block3:
-            axes[2].plot(x_t, y_t, label="x(t), y(t) curve", color='red', linestyle='--')
+            axes[2].plot(x_t, y_t, label="x(t), y(t) curve", color='red', linestyle='--', linewidth=0.5)
 
         # 设置每个子图的标题和标签
         axes[0].set_title(f"compare 3 types of splines({10*4**((i+1)//12)}) - Bspline")
@@ -119,6 +123,7 @@ def plot_data(data, filename, figure_dir='figures'):
         plt.close()  # 关闭当前图形
 
         print(f"Saved: {output_filename}")
+
 
 # 主函数
 def main():

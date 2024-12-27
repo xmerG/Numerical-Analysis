@@ -119,7 +119,7 @@ public:
     //3rd-derivative
     double left_thirdDerivatiev(const double &x) const{
         for(int i=0; i<=knots.size()-2; ++i){
-            if(knots[i]<x<=knots[i+1]){
+            if(knots[i]<x && x<=knots[i+1]){
                 return pols[i].thirdDerivative(x);
             }
         }
@@ -128,7 +128,7 @@ public:
 
     double right_thirdDerivative(const double &x) const{
         for(int i=0; i<knots.size()-2; ++i){
-            if(knots[i]<=x<knots[i+1]){
+            if(knots[i]<=x&& x<knots[i+1]){
                 return pols[i].thirdDerivative(x);
             }
         }
@@ -391,13 +391,12 @@ public:
 
 
     void print(const string& filename) {
-        // 创建一个 JSON 对象
+
         nlohmann::json j;
-        j["boundary_condition"]=btype;
-        // 将 knots（节点）存储为 JSON 数组
-        vector<double> newknots(knots.begin() + degree, knots.end()-degree); 
-        j["knots"] = newknots; 
-    
+        j["boundary_condition"] = btype;
+        vector<double> newknots(knots.begin() + degree, knots.end() - degree); 
+        j["knots"] = newknots;
+
         // 将 pols（多项式的系数）存储为 JSON 数组
         vector<nlohmann::json> polynomials;
         for (const auto& poly : pols) {
@@ -406,29 +405,34 @@ public:
             polynomials.push_back(poly_json);
         }
         j["polynomials"] = polynomials;
-    
-        // 先检查文件是否为空
+
+    // 检查文件是否为空
         std::ifstream file_check(filename);  // 用 ifstream 检查文件
         bool is_empty = file_check.peek() == std::ifstream::traits_type::eof();  // 判断文件是否为空
         file_check.close();  // 关闭检查用的文件流
 
-        // 打开文件并以追加模式写入 JSON 数据
-        std::ofstream file(filename, std::ios::app);  // 打开文件进行追加
-        if (file.is_open()) {
-            // 如果文件非空，则添加分隔符（换行符）
-            if (!is_empty) {
-                file << "\n";  // 可以根据需要使用其他分隔符
-            }
+        nlohmann::json jsonDataArray;
 
-            // 将 JSON 数据写入文件，并格式化输出
-            file << j.dump(4);  // 4 个空格缩进
-            file.close();
-            cout << "Output appended to " << filename << endl;
+        if (!is_empty) {
+            std::ifstream inFile(filename);  // 打开文件进行读取
+            inFile >> jsonDataArray;  // 读取 JSON 数据
+            inFile.close();  // 关闭读取文件流
+        }
+
+        jsonDataArray.push_back(j);
+
+    // 打开文件进行写入（覆盖文件内容）
+        std::ofstream outFile(filename, std::ios::out | std::ios::trunc);  // 打开文件，清空内容
+        if (outFile.is_open()) {
+            // 将修改后的 JSON 数组写回文件，并格式化输出
+            outFile << jsonDataArray.dump(4);  // 4 个空格缩进
+            outFile.close();
         } 
         else {
             cerr << "Error opening file " << filename << endl;
         }
     }
+
 
     //get polynomials
     vector<Polynomial> returnPols(){
