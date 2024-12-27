@@ -98,7 +98,6 @@ for idx in range(0, len(data), 6):
     plt.savefig(output_filename)
     plt.close()  # 关闭当前图形，避免重叠
 
-    print(f"A_{(idx+1)//6+1} saved as {output_filename}")
 
 # 绘制错误图形
 filename = 'error_A.json'  # 假设你的文件名是 'error_A.json'

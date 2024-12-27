@@ -1,6 +1,6 @@
 # 定义变量
-CPP_FILES = A.cpp C_and_D.cpp E.cpp
-PY_FILES = A_error.py A.py C.py E.py sphere_curve.py
+CPP_FILES = A.cpp C_and_D.cpp E.cpp F.cpp
+PY_FILES = A_error.py A.py C.py E.py sphere_curve.py F.py
 OUT_FILES = $(CPP_FILES:.cpp=)  # 生成无扩展名的可执行文件
 
 # 编译选项
@@ -40,3 +40,7 @@ cleanjson:
 	@echo "Cleaning up all .json files..."
 	@rm -f *.json  # 删除所有 JSON 文件
 
+# 清理 csv 文件
+cleancsv:
+	@echo "Cleaning up all .csv files..."
+	@rm -f *.csv

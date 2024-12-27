@@ -122,8 +122,6 @@ def plot_data(data, filename, figure_dir='figures'):
         plt.savefig(output_filename)
         plt.close()  # 关闭当前图形
 
-        print(f"Saved: {output_filename}")
-
 
 # 主函数
 def main():

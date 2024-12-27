@@ -359,18 +359,27 @@ public:
 
     }
 
-    BSpline(const vector<double> &_knots, const vector<vector<Polynomial>> &base,
-                const vector<double> &coef){
-        if(_knots.size()-degree-1!=base.size() || base.size()!=coef.size()){
+    BSpline(const vector<vector<Polynomial>> &base, const vector<double> &coef){
+        if(base.size()!=coef.size()){
             cerr<<"not a Bspline"<<endl;
             return;
         }
+        if(base[0].size()!=degree+2){
+            cerr<<"the degree is wrong!"<<endl;
+            return;
+        }
         else{
-            knots=_knots;
             b=coef;
             bases=base;
         }
-        n=knots.size()-degree-1;
+        n=coef.size();
+        for(int i=0; i<n ;++i){
+            Polynomial p;
+            for(int j=0; j<=degree; ++j){
+                p=p+Polynomial(vector<double> {b[i]})*bases[i+j][degree-j];
+            }
+            pols.push_back(p);
+        }
     }
 
     //calculate the value of arbitrary BSpline if we already know the expression
