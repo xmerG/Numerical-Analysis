@@ -28,7 +28,7 @@ void print(const vector<double> &e){
     cout<<endl;
 }
 
-vector<double> p{-3.5, -3.0, -0.5, 0.0, 0.5, 3.0, 3.5};
+vector<double> p={-3.5, -3.0, -0.5, 0.0, 0.5, 3.0, 3.5};
 template <int d>
 void Error(BSpline<d> &b, const Function &f){
     vector<double> error;
@@ -45,8 +45,13 @@ void linear_test(const vector<double> &v){
     Error(b, f);
 }
 
-
-vector<double> u{-5.0, -4.0, -3.0, -2.0, -1.0, 0, 1.0, 2.0, 3.0, 4.0, 5.0};
+void quadratic_test(const vector<double> &v){
+    Runge f;
+    BSpline<2> b;
+    b.displacementQuadraticSpline(v,f);
+    b.print("output_C.json");
+    Error(b,f);
+}
 
 void cubic_test(const vector<double> &v){
     Runge f;
@@ -78,6 +83,7 @@ void test(const double &a, const int &b){
     vector<double> v1=getknots(a,b,1);
     linear_test(v1);
 
+
     vector<double> v2=getknots(a, b, 3);
     cubic_test(v2);
 }
@@ -86,5 +92,10 @@ int main(){
     cout<<"-----------------------result for C and D---------------------------------"<<endl;
     test(-6.0,11);
     test(-5.5, 10);
+    vector<double> v;
+    for(int i=1; i<=10; ++i){
+        v.push_back(-5.5+i);
+    }
+    quadratic_test(v);
     return 0;
 }

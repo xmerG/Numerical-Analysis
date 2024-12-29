@@ -189,7 +189,6 @@ private:
     }
 
     void getpiecewisePoly(){
-        calculateCoefficient();
         for(int i=0; i<n-degree; ++i){
             Polynomial p;
             p=bases[i][3]*Polynomial(vector<double>{b[i]})+bases[i+1][2]*Polynomial(vector<double> {b[i+1]});
@@ -198,6 +197,15 @@ private:
             Polynomial p3;
             p3=p+p2;
             pols.push_back(p3);
+        }
+    }
+    void setPols(){
+        for(int i=0; i<n-degree ;++i){
+            Polynomial p;
+            for(int j=0; j<=degree; ++j){
+                p=p+Polynomial(vector<double> {b[i+j]})*bases[i+j][degree-j];
+            }
+            pols.push_back(p);
         }
     }
 
@@ -298,6 +306,7 @@ private:
                 A[n-1][n-4]=bases[n-4][3].thirdDerivative(y)-bases[n-4][2].thirdDerivative(y);
                 A[n-1][n-5]=-bases[n-5][3].thirdDerivative(y);
             }
+            calculateCoefficient();
             getpiecewisePoly();
         }
     }
@@ -320,8 +329,8 @@ public:
             for(int i=1; i<n-1; ++i){
                 b[i]=vals[i-1];
             }
-            fit(a1,a2);
         }
+        fit(a1,a2);
         clear();
     }
     BSpline(const vector<double> &_knots, const Function &F, const boundaryType &_btype=boundaryType::non):knots{_knots}{
@@ -373,13 +382,7 @@ public:
             bases=base;
         }
         n=coef.size();
-        for(int i=0; i<n ;++i){
-            Polynomial p;
-            for(int j=0; j<=degree; ++j){
-                p=p+Polynomial(vector<double> {b[i]})*bases[i+j][degree-j];
-            }
-            pols.push_back(p);
-        }
+        setPols();
     }
 
     //calculate the value of arbitrary BSpline if we already know the expression
@@ -396,6 +399,55 @@ public:
             }
         }
         return y;
+    }
+
+    void displacementQuadraticSpline(const vector<double> &_knots, const Function &f){
+        knots=_knots;
+        n=knots.size();
+        b.resize(n,0.0);
+        A.resize(n,vector<double> (n,0.0));
+        vector<double> newknots;
+        newknots.push_back(knots[0]-2.5);
+        newknots.push_back(knots[0]-1.5);
+        for(int i=0; i<n; ++i){
+            b[i]=8*f(knots[i]);
+            newknots.push_back(knots[i]-0.5);
+        }
+        newknots.push_back(knots[n-1]+0.5);
+        newknots.push_back(knots[n-1]+1.5);
+        newknots.push_back(knots[n-1]+2.5);
+        knots=newknots;
+        newknots.clear();
+        newknots.shrink_to_fit();
+        b[0]-=2*f(knots[2]);
+        double a2=2*f(knots[2]);
+        b[n-1]-=2*f(knots[knots.size()-3]);
+        double a1=2*f(knots[knots.size()-3]);;
+        for(int i=0; i<n; ++i){
+            if(i==0){
+                A[i][i]=5;
+                A[i][i+1]=1;
+            }
+            else if(i!=n-1){
+                A[i][i-1]=1;
+                A[i][i]=6;
+                A[i][i+1]=1;
+            }
+            else{
+                A[i][i-1]=1;
+                A[i][i]=5;
+            }
+        }
+        n+=2;
+        prepare();
+        n-=2;
+        calculateCoefficient();
+        n+=2;
+        double x=b[0];
+        b.insert(b.begin(),a2-x);
+        b.push_back(a1-b[b.size()-1]);
+        setPols();
+
     }
 
 

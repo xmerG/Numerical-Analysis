@@ -64,7 +64,7 @@ for group_idx in range(0, len(json_data), 6):
         polynomials = data["polynomials"]
 
         # 根据 boundary_condition 获取边界类型名称
-        boundary_type = boundary_types.get(boundary_condition, "non")
+        boundary_type = boundary_types.get(boundary_condition, "quadratic")
 
         # 根据 boundary_condition 获取边界条件对应的颜色
         color = boundary_colors.get(boundary_condition, 'red')  
