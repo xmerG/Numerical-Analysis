@@ -1,8 +1,10 @@
 # 定义变量
-CPP_FILES = A.cpp C_and_D.cpp E.cpp F.cpp
-PY_FILES = A.py C.py E.py sphere_curve.py F.py
-OUT_FILES = $(CPP_FILES:.cpp=)  # 生成无扩展名的可执行文件
-TEX_FILES = document.tex report.tex  # TeX 文件
+CPP_FILES = src/A.cpp src/C_and_D.cpp src/E.cpp src/F.cpp
+PY_FILES = src/A.py src/C.py src/E.py src/sphere_curve.py src/F.py
+TEX_FILES = doc/document.tex doc/report.tex  # TeX 文件
+
+# 生成无扩展名的可执行文件
+OUT_FILES = $(CPP_FILES:src/%.cpp=%)
 
 # 编译选项
 CXX = g++
@@ -19,8 +21,8 @@ all: $(OUT_FILES)
 	done
 
 # 编译 C++ 文件
-%: %.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)  
+%: src/%.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 # 目标: 运行所有 Python 文件
 py:
@@ -44,9 +46,10 @@ report: $(TEX_FILES)
 clean:
 	@echo "Cleaning up all executables and intermediate files..."
 	@rm -f $(OUT_FILES)  # 删除所有可执行文件
-	@rm -f *.aux *.log *.out *.toc *.lof *.lot *.bbl *.blg *.xml *.fdb_latexmk *.fls  # 删除所有中间文件
+	@rm -f doc/*.aux doc/*.log doc/*.out doc/*.toc doc/*.lof doc/*.lot doc/*.bbl doc/*.blg doc/*.xml doc/*.fdb_latexmk doc/*.fls  # 删除所有 LaTeX 中间文件
 
 # 清理 .json 和 .csv 文件
 cleanfile:
 	@echo "Cleaning up all files..."
 	@rm -f *.json *.csv  # 删除所有 JSON 和 CSV 文件
+
