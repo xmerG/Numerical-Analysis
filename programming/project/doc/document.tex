@@ -1,0 +1,287 @@
+\documentclass[UTF8]{ctexart}
+\usepackage{geometry}
+\geometry{margin=1.5cm, vmargin={0pt,1cm}}
+\setlength{\topmargin}{-1cm}
+\setlength{\paperheight}{29.7cm}
+\setlength{\textheight}{25.3cm}
+
+% useful packages.
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage{fancyhdr}
+\usepackage[table]{xcolor}
+\usepackage{layout}
+\usepackage{float, caption}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tikz}
+
+% 自定义配色方案，尽量模仿 VS Code 的高亮效果
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codeblue}{rgb}{0,0,0.9}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{codered}{rgb}{0.8,0,0}
+\definecolor{backcolor}{rgb}{0.95,0.95,0.95}
+
+% lstlisting 的风格设置
+\lstdefinestyle{vscode}{
+	backgroundcolor=\color{backcolor},   % 背景颜色
+	commentstyle=\color{codegreen},     % 注释颜色
+	keywordstyle=\color{codeblue}\bfseries, % 关键字颜色
+	numberstyle=\tiny\color{gray},      % 行号颜色
+	stringstyle=\color{codered},        % 字符串颜色
+	basicstyle=\ttfamily\footnotesize,  % 基本字体
+	breakatwhitespace=false,            % 仅在空格处断行
+	breaklines=true,                    % 自动换行
+	captionpos=b,                       % 标题位置（bottom）
+	keepspaces=true,                    % 保持空格
+	numbers=left,                       % 显示行号
+	numbersep=5pt,                      % 行号与代码间的间隔
+	rulecolor=\color{black},            % 框线颜色
+	showspaces=false,                   % 不显示空格符号
+	showstringspaces=false,             % 不显示字符串中的空格
+	showtabs=false,                     % 不显示制表符
+	frame=single,                       % 外框
+	tabsize=4,                          % 制表符宽度
+	escapeinside={(*@}{@*)},            % 特殊字符转义
+	morekeywords={*,...}                % 添加更多自定义关键字
+}
+\lstset{style=vscode}
+
+% some common command
+\newcommand{\dif}{\mathrm{d}}
+\newcommand{\avg}[1]{\left\langle #1 \right\rangle}
+\newcommand{\difFrac}[2]{\frac{\dif #1}{\dif #2}}
+\newcommand{\pdfFrac}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\OFL}{\mathrm{OFL}}
+\newcommand{\UFL}{\mathrm{UFL}}
+\newcommand{\fl}{\mathrm{fl}}
+\newcommand{\op}{\odot}
+\newcommand{\Eabs}{E_{\mathrm{abs}}}
+\newcommand{\Erel}{E_{\mathrm{rel}}}
+
+\begin{document}
+	
+	\pagestyle{fancy}
+	\fancyhead{项目作业}
+	\lhead{高凌溪, 3210105373}
+	\chead{2024 NA 项目作业设计报告}
+	\rhead{\today}
+	\begin{abstract}
+		实现了BSpline和ppForm-Spline的程序包，并调用这两个样条拟合函数和曲线。
+	\end{abstract}
+	\section{设计思路}
+	我设计了如下几个类：
+	\begin{itemize}
+		\item \texttt{class Function} 函数抽象基类
+		\item \texttt{class Polynomial} 多项式类，继承自\texttt{class Function}
+		\item \texttt{class ppForm} ppFormSpline插值类
+		\item \texttt{class linear\_ppForm} 用ppForm实现$S_2^1$样条，继承自\texttt{class ppForm}
+		\item \texttt{class cubic\_ppForm} 用ppForm实现$S_3^2$，继承自\texttt{class ppForm}
+		\item \texttt{class B\_base<degree>} 模板类，用来实现任意阶任意节点上的B-Spline的基函数
+		\item \texttt{class class BSpline<degree>} 模板类，实现任意阶的BSpline $S_n^{n-1}$
+		\item \texttt{plane\_curve\_fit} 平面上曲线的拟合，支持均匀节点和累计弧长的节点。派生了两个类，分别支持Bspline和pFormSpline拟合平面上的曲线，
+		\item \texttt{class spherefit} 实现用ppSpline拟合球面上的曲线，并保证拟合后的曲线仍然落在球面上。
+		\item \texttt{class Table}用来解决F题，生成$(t-x)_{+}^n$的$n+2$阶差商表。
+	\end{itemize}
+	边界条件用枚举的形式定义
+	\begin{itemize}
+		\item \texttt{enum class boundaryType} 记录五种边界条件，如果不是$S_3^2$就把边界条件记作\texttt{non}
+	\end{itemize}
+	最后我还调用了第二章作业的\texttt{class Hermiteinterpolation}用来求ppForm的分段多项式。
+	\subsection{\texttt{class Function}}
+	在抽象基类\texttt{Function}中，实现函数的求值和用两点法求数值一阶导数，实现数值二阶导数。
+	\begin{lstlisting}
+		class Function {
+			public:
+			virtual double operator() (double x) const = 0;
+			virtual double derivative(double x) const {}
+			double doubleDerivative(double x) const{}
+		};
+	\end{lstlisting}
+	\subsection{\texttt{class Polynomial}}
+	在多项式类中，重载实现了多项式加、减、乘法运算，另外又实现了多项式在指定点求值，多项式求导数。
+	\begin{lstlisting}		
+	class Polynomial{
+	pubilc:
+		vector<double> getcoefficents() const{}
+		int Degree() const {}}
+		bool notequal(const Polynomial &p1) const{}
+			
+		//实现多项式的加法
+		Polynomial operator+(const Polynomial &p1 ) const{}
+
+		//实现多项式减法
+		Polynomial operator-()const{}
+		Polynomial operator-(const Polynomial &p1){}
+			
+		//实现多项式数乘
+		Polynomial operator*(const double &a) const{}
+			
+		//实现多项式乘法
+		Polynomial operator*(const Polynomial &p1)const{}
+			
+		//多项式求值
+		double operator()(double(x))const{}
+			
+		//多项式求导
+		Polynomial derivative()const{}
+			
+		//三阶导数
+		Polynomial thirdDerivative() const{}
+			
+		double thirdDerivative(const double &x) const{}
+			
+		//指定点求导数
+		double derivative(const double &x){}
+			
+		void printToJson(const string& filename) const {}
+	};
+	#endif
+	\end{lstlisting}
+	\subsection{ppForm Spline 的实现}
+	\begin{enumerate}
+		\item 	首先定义基类\texttt{class ppForm}，记录边界条件、节点、在每个区间上的多项式。可以实现给定函数和节点、给定节点和节点上的函数值构造pp-Spline。最后会输出在每一个区间上的多项式系数。
+		\begin{lstlisting}
+		class ppForm{
+		protected:
+			int n;                //记录节点个数
+			boundaryType btype=boundaryType::non;  //记录边界条件
+			vector<double> knots; //记录给定的节点
+			vector<double> vals;  //记录节点上的函数值
+			vector<Polynomial> pols; //每一个多项式代表了在对应编号区间上得到的插值多项式
+		public:
+			ppForm(const vector<double> &_knots, const Function &F):knots{_knots}
+			ppForm(const vector<double> &_knots, const vector<double> &_vals):knots{_knots}, vals{_vals}
+		\end{lstlisting}
+		成员变量中的\texttt{vals}会在得到多项式之后释放掉。
+		\item 实现$S_2^1$:只要知道节点和节点上的函数值，在用直线将点连接起来，即完成了拟合。具体的，把用直线“连起来”的想法用成员函数\texttt{fit()}实现。
+		\begin{lstlisting}
+		class linear_ppForm:public ppForm{
+		private:
+		//计算每个区间上的多项式
+			void fit(){}
+			public:
+			linear_ppForm(){}
+			linear_ppForm(const vector<double> &_knots, const Function &F):ppForm(_knots, F){}
+			linear_ppForm(const vector<double> &_knots, const vector<double> &_vals):ppForm(_knots,_vals){}
+		};
+		\end{lstlisting}
+		\item 实现$S_3^2$样条，在\texttt{class cubic\_ppForm}中，用一个二维的\texttt{vector}向量储存要求解的系数矩阵（虽然这不是一个很好的存储稀疏矩阵的方式）。根据lemma 3.3，可以确定$N-2$个方程，再根据边界条件确定两个方程，下面推导五种边界条件对应的方程：
+		\begin{itemize}
+			\item natural:
+			\item specific:
+			\item not-a-knot:
+			\item complete:
+			\item periodic: 
+		\end{itemize}
+	\subsection{BSpline 的实现}
+		用\texttt{class B\_base<degree>}实现BSpline的基函数。
+		\begin{lstlisting}
+		template<int degree>
+		class B_base{
+		protected:
+			int n; //记录节点 个数
+			vector<double> knots; //记录节点
+			vector<Polynomial> pols;  //记录分段多项式
+		public:
+			B_base(){};
+			B_base(const vector<double> &_knots)
+				
+			//给定节点的指标i,构造support在knots[i-1]到knots[i+d]上的d阶B样条
+			vector<double> setknots(const int &index, const int & d) const{}
+				
+			vector<Polynomial> getPolynomial() const
+				
+			//构造分段多项式
+			void getBase()
+				
+			//在给定节点上求值
+			double operator()(const int &index) const
+				
+			//在给定节点求一阶导数,如果只求导，不要对B_base<degree>执行getbase()
+			double derivative(const int &index) const
+				
+			//3rd-derivative
+			double left_thirdDerivatiev(const double &x) const
+				
+			double right_thirdDerivative(const double &x) const
+		\end{lstlisting}
+		通过模板函数\texttt{class B\_base<degree>}实现，其中\texttt{degree}表示BSpline的阶。由于BSpline需要确定基函数与系数，因此如果给定$N$个节点$x_1,\ x_2,\ ...,\ x_N$我们需要在$x_1$左边和$x_N$右边多指定$degree$个节点。
+		\begin{lstlisting}
+		template<int degree>
+		class BSpline{
+			private:
+			vector<double> knots; //记录节点 要多记录2*degree个节点
+			vector<vector<double>> A; //系数矩阵
+			vector<double> b; //记录节点上的函数值，最终会将基函数的系数储存在b中
+			vector<vector<Polynomial>> bases; //记录基函数
+			vector<Polynomial> pols;  //记录多项式
+			int n;  //the number of bases
+			boundaryType btype=boundaryType::non;
+			
+			//实现$S_3^2$ a1, a2记录另外需要的两个边界条件
+			void fit(const double &a1=0.0, const double &a2=0.0)
+			
+			//给定B样条的基和系数，生成在每一子区间上的多项式
+			void setPols(){
+		};
+		\end{lstlisting}
+		最终在得到\texttt{pols}之后，会释放\texttt{A,\ b}所占用的内存。Bspline设计了如下几个接口：
+		\begin{lstlisting}
+		BSpline(){}
+		BSpline(const vector<double> &_knots, const vector<double> &vals,const boundaryType &_btype=boundaryType::non,const double &a1=0.0, const double &a2=0.0)
+		
+		BSpline(const vector<double> &_knots, const vector<vector<Polynomial>> &base,const vector<double> &coef)
+		
+		double calculateValue(const double &x)
+		
+		void displacementQuadraticSpline(const vector<double> &_knots, const Function &f)  //解决theorem 3.58
+		
+		void print(const string& filename)
+		\end{lstlisting}
+		分别实现了给定节点和函数，给定节点和在节点上的函数值以及边界信息\texttt{a\_1,\ a\_2}，给定任意阶Bspline在指点点求值。最后将结果输出每个区间段的多项式系数到文件。这里Bspline的五种边界条件推导和ppForm基本类似，就不再重复写出。
+	\end{enumerate}
+	\subsection{平面曲线的拟合}
+	首先定义了基类\texttt{class plane\_curve\_fit}，成员变量如下和主要的成员函数：
+	\begin{lstlisting}
+	protected:
+		vector<double> knots; //knots
+		boundaryType btype;
+		knotsType ktype;
+		vector<double> x_vals;
+		vector<double> y_vals;
+		vector<Polynomial> polsX;
+		vector<Polynomial> polsY;
+	public:
+		//实现将对t的参数转化为累计弧长参数
+		void setknots(const int &N, const double &a, const double &b, const Function &f1, const Function &f2)
+		
+		//直接取均匀参数
+		void uniknots(const int &N, const double &a, const double &b, const Function &f1, const Function &f2)
+		 
+	\end{lstlisting}
+	最后会将得到的二维的点以\texttt{json}格式输出到文件。然后派生出两个类\texttt{class cubic\_bspline\_fit:public plane\_curve\_fit}和\texttt{class cubic\_ppform\_fit:public plane\_curve\_fit}分别实现用BForm和ppForm的$S_3^2$拟合曲线。
+	\subsection{球面样条的拟合}
+	对于单位球面上的简单闭曲线$\gamma$，在一般情况下，总是能找到一个点$p \in S^,\ p \notin $。在我实现的球面样条拟合中，我总是假设曲线是在单位球面上（如果不是只要做伸缩变换就可以了，这是容易在函数实例化的时候实现的），并且不会经过南极点$p_0$。因此$S\setminus p_0$上有一个整体的坐标卡$\phi:\ S\setminus p_0 \to \mathbb{R^2}$，$\phi(x,y,z)=\left(\frac{x}{1+z},\frac{y}{1+z}\right)$就是球极投影。只要在$\mathbb{R^2}$上拟合曲线之后，再拉回到球面上即可保证拟合的曲线仍然落在球面上。球面样条的拟合在\texttt{class spherefit:public plane\_curve\_fit}里实现。由于B样条拟合需要自己设置额外的节点，因此使用ppForm-spline在平面上拟合。
+	\begin{lstlisting}
+	class spherefit:public plane_curve_fit{
+	private:
+		vector<vector<double>> points;
+		void clear(){
+			points.clear();
+			points.shrink_to_fit();
+		}
+	public:
+		spherefit(const int &n, const double &a, const double &b, const Function &f1, const Function &f2, const knotsType &_ktype)
+		
+		void cubic_ppFit(const boundaryType &_btype)
+		void print(const string &filename)
+	\end{lstlisting}
+	这里构造函数给出的函数应该是经过$\phi$作用之后的函数。比如要拟合曲线$\gamma(t)=(a(t),\ b(t),\ c(t))$，应该实例化的函数是$\frac{a(t)}{1+c(t)}$和$\frac{b(t)}{1+c(t)}$，但是最后输出到文件的点是三维的点。
+\end{document}
